@@ -1,5 +1,7 @@
 // profile_screen.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -21,9 +23,13 @@ class ProfilePage extends StatelessWidget {
             Text("Email: john@example.com", style: TextStyle(fontSize: 16)),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/login'),
-              child: Text("Logout"),
-            ),
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  await GoogleSignIn().signOut();
+                  Navigator.pushNamed(context, '/login');
+                  },
+                  child: Text("Logout"),
+                  ),
           ],
         ),
       ),

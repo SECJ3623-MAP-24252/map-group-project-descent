@@ -21,7 +21,7 @@ class LoginPage extends StatelessWidget {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.pushNamed(context, '/'),
               child: Text("Login"),
             ),
             TextButton(
@@ -29,7 +29,7 @@ class LoginPage extends StatelessWidget {
               child: Text("Don't have an account? Register"),
             ),
             TextButton(
-              onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+              onPressed: () => Navigator.pushNamed(context, '/forget'),
               child: Text("Forgot Password?"),
             ),
             // Optional: Google Sign-In button

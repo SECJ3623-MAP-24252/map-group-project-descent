@@ -12,18 +12,19 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(fontFamily: 'Poppins'),
-      home: const HomePage(),
-      // login: const LoginPage(),
-      // register: const RegisterPage(),
-      // forget: const ForgetPage(),
-      // dashboard: const DashboardPage(),
-      // profile: const ProfilePage(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomePage(),
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
+        '/forget': (context) => const ForgetPage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }

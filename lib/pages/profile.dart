@@ -1,8 +1,8 @@
 // profile_screen.dart
 import 'package:flutter/material.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class ProfileScreen extends StatelessWidget {
             Text("Email: john@example.com", style: TextStyle(fontSize: 16)),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.pushNamed(context, '/login'),
               child: Text("Logout"),
             ),
           ],

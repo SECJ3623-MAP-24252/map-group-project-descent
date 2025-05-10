@@ -1,8 +1,8 @@
 // forgot_password_screen.dart
 import 'package:flutter/material.dart';
 
-class ForgotPage extends StatelessWidget {
-  const ForgotPage({super.key});
+class ForgetPage extends StatelessWidget {
+  const ForgetPage({super.key});
 
   @override
   Widget build(BuildContext context) {

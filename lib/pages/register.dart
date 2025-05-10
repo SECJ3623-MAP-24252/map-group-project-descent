@@ -24,7 +24,7 @@ class RegisterPage extends StatelessWidget {
             ),
             SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.pushNamed(context, '/login'),
               child: Text("Register"),
             ),
           ],

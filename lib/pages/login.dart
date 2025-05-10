@@ -1,5 +1,7 @@
 // login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -34,12 +36,41 @@ class LoginPage extends StatelessWidget {
             ),
             // Optional: Google Sign-In button
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _handleGoogleSignIn(context),
               icon: Icon(Icons.login),
               label: Text("Sign in with Google"),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+final GoogleSignIn _googleSignIn = GoogleSignIn();
+final FirebaseAuth _auth = FirebaseAuth.instance;
+
+Future<void> _handleGoogleSignIn(BuildContext context) async {
+  try {
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    final GoogleSignInAuthentication googleAuth = 
+        await googleUser!.authentication;
+    
+    final AuthCredential credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
+    
+    final UserCredential userCredential = 
+        await _auth.signInWithCredential(credential);
+    
+    Navigator.pushNamed(context, '/'); // Redirect to HomePage
+  } catch (e) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Error"),
+        content: Text("Failed to sign in with Google: $e"),
       ),
     );
   }

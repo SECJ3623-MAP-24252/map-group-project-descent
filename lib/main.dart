@@ -1,21 +1,19 @@
-import 'package:bitewise/pages/home.dart';
-import 'package:bitewise/pages/login.dart';
-import 'package:bitewise/pages/register.dart';
-import 'package:bitewise/pages/forget.dart';
-import 'package:bitewise/pages/profile.dart';
+import 'pages/home.dart';
+import 'pages/login.dart';
+import 'pages/register.dart';
+import 'pages/forget.dart';
+import 'pages/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+  // await Firebase.initializeApp(); // Initialize Firebase
 
   // Check if user is already logged in
   FirebaseAuth auth = FirebaseAuth.instance;
   User? user = auth.currentUser;
-
 
   runApp(MyApp(initialRoute: user != null ? '/' : '/login'));
 }

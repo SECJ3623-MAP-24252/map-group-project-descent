@@ -8,7 +8,7 @@ class ForgetPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final emailController = TextEditingController();
 
-    Future<void> _resetPassword() async {
+    Future<void> resetPassword() async {
       try {
         await FirebaseAuth.instance.sendPasswordResetEmail(
           email: emailController.text.trim(),
@@ -41,7 +41,7 @@ class ForgetPage extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _resetPassword,
+              onPressed: resetPassword,
               child: const Text("Send Reset Link"),
             ),
           ],

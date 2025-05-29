@@ -1,6 +1,7 @@
 // dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'edit_food.dart';
+import 'daily_nutrition.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -153,7 +154,15 @@ class HomePage extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       Icon(Icons.home, color: Color(0xFFB0B0B0)),
-                      Icon(Icons.calendar_today, color: Color(0xFFB0B0B0)),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => DailyNutritionPage()),
+                          );
+                        },
+                        child: Icon(Icons.calendar_today, color: Color(0xFFB0B0B0)),
+                      ),
                       SizedBox(width: 48), // Space for FAB
                       Icon(Icons.bar_chart, color: Color(0xFFB0B0B0)),
                       Icon(Icons.person, color: Color(0xFFB0B0B0)),

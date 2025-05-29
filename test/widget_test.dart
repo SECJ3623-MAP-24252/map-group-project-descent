@@ -13,7 +13,13 @@ import 'package:bitewise/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
+<<<<<<< HEAD
     await tester.pumpWidget(const MyApp());
+=======
+    await tester.pumpWidget(
+      const MyApp(initialRoute: '/'),
+    ); //POSSIBLE BREAK CHANGE
+>>>>>>> 1c92d99cd81646824f609e845f6fd8677a4b0bc1
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

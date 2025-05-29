@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "705316604843",
+    "project_id": "bitewise-76709",
+    "storage_bucket": "bitewise-76709.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:705316604843:android:dea07f4617ac9d3a62e0ee",
+        "android_client_info": {
+          "package_name": "com.example.bitewise"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "705316604843-p3kf858sskhuhb9cr929263298lrnh1s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bitewise",
+            "certificate_hash": "a417c8a1bf4dff5534d3542f11b354ec0ba86bfd"
+          }
+        },
+        {
+          "client_id": "705316604843-92nnlu5soum1nogjlac5o5lkl83efcgm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwLUV1X_d1iOIubVGuP3MFa38GnXRU42s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "705316604843-92nnlu5soum1nogjlac5o5lkl83efcgm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

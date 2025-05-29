@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 plugins {
 
   // ...
@@ -11,7 +9,6 @@ plugins {
 
 }
 
->>>>>>> 1c92d99cd81646824f609e845f6fd8677a4b0bc1
 allprojects {
     repositories {
         google()

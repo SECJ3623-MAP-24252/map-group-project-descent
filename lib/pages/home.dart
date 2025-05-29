@@ -1,10 +1,7 @@
 // dashboard_screen.dart
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-=======
 import 'edit_food.dart';
 import 'daily_nutrition.dart';
->>>>>>> 1c92d99cd81646824f609e845f6fd8677a4b0bc1
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -12,18 +9,6 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
-      appBar: AppBar(title: Text("Home")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Welcome to BiteWise!", style: TextStyle(fontSize: 24)),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/profile'),
-              child: Text("Go to Profile"),
-=======
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
@@ -198,15 +183,12 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
               ],
->>>>>>> 1c92d99cd81646824f609e845f6fd8677a4b0bc1
             ),
           ],
         ),
       ),
     );
   }
-<<<<<<< HEAD
-=======
 }
 
 class _DayItem extends StatelessWidget {
@@ -270,5 +252,4 @@ class _MealCard extends StatelessWidget {
       ),
     );
   }
->>>>>>> 1c92d99cd81646824f609e845f6fd8677a4b0bc1
 }

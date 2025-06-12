@@ -5,346 +5,340 @@ import 'api_config.dart';
 import 'local_food_database.dart';
 
 class AIFoodService {
-  /// Main method to analyze food image using AI services
+  /// Main method to analyze food image using Gemini + CalorieNinjas
   static Future<Map<String, dynamic>> analyzeFoodImage(File imageFile) async {
     try {
+      // Step 1: Use Gemini to analyze the image and extract ingredients
+      final ingredientsString = await _analyzeImageWithGemini(imageFile);
+
+      if (ingredientsString != null && ingredientsString.isNotEmpty) {
+        print('Successfully extracted ingredients: $ingredientsString');
+
+        // Step 2: Use CalorieNinjas to get nutrition data for the ingredients
+        final nutritionData = await _getNutritionFromCalorieNinjas(
+          ingredientsString,
+        );
+
+        if (nutritionData != null) {
+          return nutritionData;
+        }
+      } else {
+        print('Failed to extract ingredients from image');
+      }
+
+      // If AI services fail, return a default response
+      return _getDefaultResponse();
+    } catch (e) {
+      print('Error in analyzeFoodImage: $e');
+      return _getDefaultResponse();
+    }
+  }
+
+  /// Analyze food image using Gemini 1.5 Flash API
+  static Future<String?> _analyzeImageWithGemini(File imageFile) async {
+    try {
+      final apiKey = APIConfig.getApiKey('gemini');
+      if (apiKey == null || apiKey.isEmpty) {
+        print('Gemini API key not configured');
+        return null;
+      }
+
       // Convert image to base64
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      // Try Spoonacular first for both recognition and nutrition
-      try {
-        if (APIConfig.hasApiKey('spoonacular')) {
-          final spoonacularResult = await _analyzeFoodWithSpoonacular(
-            imageFile,
-          );
-          if (spoonacularResult != null) {
-            return spoonacularResult;
-          }
-        }
-      } catch (e) {
-        print('Spoonacular analysis failed: $e');
-      }
+      // Updated Gemini API endpoint for 1.5 Flash model
+      final uri = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$apiKey',
+      );
 
-      // Try Clarifai for food recognition
-      try {
-        if (APIConfig.hasApiKey('clarifai')) {
-          final clarifaiResult = await _analyzeFoodWithClarifai(base64Image);
-          if (clarifaiResult != null) {
-            // Get nutrition data from Spoonacular using the food name
-            final nutritionData = await _getNutritionFromSpoonacular(
-              clarifaiResult['food_name'],
-            );
-            return _combineResults(clarifaiResult, nutritionData);
-          }
-        }
-      } catch (e) {
-        print('Clarifai analysis failed: $e');
-      }
+      final prompt =
+          '''Analyze the provided image for individual food items. If a composite dish (e.g., cheeseburger, pizza slice) is identified, break it down into its distinct, base ingredients. For each identified food item or base ingredient, estimate its weight in grams (g). Convert any liquid volume measurements (e.g., ml, tablespoons), piece measurements, or unspecified units to grams. Provide its specific name. List all identified items and their estimated weights in a single, comma-separated string, formatted as 'WEIGHTg INGREDIENT_NAME', with no additional text, descriptions, or calorie counts. Do not include any ambiguous or vague terms.
 
-      // If all AI services fail, return a default response
-      return _getDefaultResponse();
-    } catch (e) {
-      throw Exception('Failed to analyze food image: $e');
-    }
-  }
+Example Input:
+(Image of a hamburger: bun, patty, cheese, lettuce, tomato, ketchup, mayonnaise)
 
-  /// Analyze food using Spoonacular's image recognition API
-  static Future<Map<String, dynamic>?> _analyzeFoodWithSpoonacular(
-    File imageFile,
-  ) async {
-    final apiKey = APIConfig.getApiKey('spoonacular');
-    if (apiKey == null) return null;
+Expected API Output Format:
+70g Bun, 90g Beef Patty, 18g Processed Cheese, 8g Iceberg Lettuce, 20g Tomato, 15g Ketchup, 5g Mayonnaise''';
 
-    final uri = Uri.parse('https://api.spoonacular.com/food/images/analyze');
-
-    // Create multipart request
-    final request =
-        http.MultipartRequest('POST', uri)
-          ..headers['x-api-key'] = apiKey
-          ..files.add(
-            await http.MultipartFile.fromPath('file', imageFile.path),
-          );
-
-    final response = await request.send();
-    final responseBody = await response.stream.bytesToString();
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(responseBody);
-
-      if (data['category'] != null && data['nutrition'] != null) {
-        // Extract the most relevant food name
-        String foodName = data['category']['name'];
-
-        // If there are annotations, use the most confident one
-        if (data['annotations'] != null && data['annotations'].isNotEmpty) {
-          final annotations = data['annotations'] as List;
-          if (annotations.isNotEmpty) {
-            foodName = annotations.first['annotation'];
-          }
-        }
-
-        // Extract nutrition data
-        final nutrition = data['nutrition'];
-        final calories =
-            nutrition['calories'] != null
-                ? nutrition['calories']['value'] ?? 0.0
-                : 0.0;
-
-        // Extract nutrients
-        final nutrients = nutrition['nutrients'] as List;
-        double protein = 0.0, carbs = 0.0, fat = 0.0, fiber = 0.0, sugar = 0.0;
-
-        for (final nutrient in nutrients) {
-          final name = nutrient['name'].toString().toLowerCase();
-          final value = nutrient['amount'] ?? 0.0;
-
-          if (name.contains('protein'))
-            protein = value;
-          else if (name.contains('carbohydrates'))
-            carbs = value;
-          else if (name.contains('fat'))
-            fat = value;
-          else if (name.contains('fiber'))
-            fiber = value;
-          else if (name.contains('sugar'))
-            sugar = value;
-        }
-
-        return {
-          'food_name': _cleanFoodName(foodName),
-          'confidence': 0.85, // Spoonacular doesn't provide confidence scores
-          'source': 'spoonacular',
-          'nutrition': {
-            'calories': calories,
-            'protein': protein,
-            'carbs': carbs,
-            'fat': fat,
-            'fiber': fiber,
-            'sugar': sugar,
-          },
-          'serving_size': '100g',
-          'ingredients': [foodName],
-        };
-      }
-    }
-    return null;
-  }
-
-  /// Analyze food using Clarifai Food Model
-  static Future<Map<String, dynamic>?> _analyzeFoodWithClarifai(
-    String base64Image,
-  ) async {
-    final apiKey = APIConfig.getApiKey('clarifai');
-    if (apiKey == null) return null;
-
-    const String url =
-        'https://api.clarifai.com/v2/models/food-item-recognition/outputs';
-
-    final response = await http.post(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Key $apiKey',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'inputs': [
+      final requestBody = {
+        "contents": [
           {
-            'data': {
-              'image': {'base64': base64Image},
-            },
+            "parts": [
+              {"text": prompt},
+              {
+                "inline_data": {"mime_type": "image/jpeg", "data": base64Image},
+              },
+            ],
           },
         ],
-      }),
-    );
+        "generationConfig": {
+          "temperature": 0.1,
+          "topK": 32,
+          "topP": 1,
+          "maxOutputTokens": 4096,
+        },
+      };
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final concepts = data['outputs'][0]['data']['concepts'] as List;
+      print('Sending request to Gemini API...');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
+      );
 
-      if (concepts.isNotEmpty) {
-        final topConcept = concepts.first;
-        return {
-          'food_name': _cleanFoodName(topConcept['name']),
-          'confidence': topConcept['value'],
-          'source': 'clarifai',
-          'raw_concepts':
-              concepts
-                  .take(5)
-                  .map((c) => {'name': c['name'], 'confidence': c['value']})
-                  .toList(),
-        };
+      print('Gemini response status: ${response.statusCode}');
+      print('Gemini response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data != null &&
+            data is Map<String, dynamic> &&
+            data['candidates'] != null &&
+            data['candidates'] is List &&
+            data['candidates'].isNotEmpty) {
+          final candidates = data['candidates'] as List;
+          final firstCandidate = candidates[0];
+
+          if (firstCandidate is Map<String, dynamic> &&
+              firstCandidate['content'] != null &&
+              firstCandidate['content'] is Map<String, dynamic>) {
+            final content = firstCandidate['content'] as Map<String, dynamic>;
+
+            if (content['parts'] != null &&
+                content['parts'] is List &&
+                content['parts'].isNotEmpty) {
+              final parts = content['parts'] as List;
+              final firstPart = parts[0];
+
+              if (firstPart is Map<String, dynamic> &&
+                  firstPart['text'] != null) {
+                final ingredientsText = firstPart['text'].toString().trim();
+                print('Gemini extracted ingredients: $ingredientsText');
+                return ingredientsText;
+              }
+            }
+          }
+        }
+      } else {
+        print('Gemini API error: ${response.statusCode} - ${response.body}');
+
+        // Check if we need to switch to a different model
+        if (response.statusCode == 404) {
+          final errorData = jsonDecode(response.body);
+          if (errorData != null &&
+              errorData is Map<String, dynamic> &&
+              errorData['error'] != null &&
+              errorData['error'] is Map<String, dynamic>) {
+            final error = errorData['error'] as Map<String, dynamic>;
+            final message = error['message']?.toString() ?? '';
+
+            if (message.contains('deprecated') ||
+                message.contains('not found')) {
+              print(
+                'Model deprecated or not found. Please update the model name in the code.',
+              );
+            }
+          }
+        }
       }
+    } catch (e) {
+      print('Error in _analyzeImageWithGemini: $e');
     }
     return null;
   }
 
-  /// Get nutrition information from Spoonacular using food name
-  static Future<Map<String, dynamic>?> _getNutritionFromSpoonacular(
-    String foodName,
+  /// Get nutrition data from CalorieNinjas API
+  static Future<Map<String, dynamic>?> _getNutritionFromCalorieNinjas(
+    String ingredientsString,
   ) async {
-    final apiKey = APIConfig.getApiKey('spoonacular');
-    if (apiKey == null) {
-      // Try local database if API key is not available
-      return LocalFoodDatabase.searchFood(foodName);
-    }
-
-    final encodedQuery = Uri.encodeComponent(foodName);
-    final uri = Uri.parse(
-      'https://api.spoonacular.com/recipes/guessNutrition?title=$encodedQuery&apiKey=$apiKey',
-    );
-
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      // Check if we got valid nutrition data
-      if (data['calories'] != null && data['calories']['value'] != null) {
-        return {
-          'calories': data['calories']['value']?.toDouble() ?? 0.0,
-          'protein': data['protein']['value']?.toDouble() ?? 0.0,
-          'carbs': data['carbs']['value']?.toDouble() ?? 0.0,
-          'fat': data['fat']['value']?.toDouble() ?? 0.0,
-          'serving_weight': 100.0,
-          'serving_description': '100g',
-        };
+    try {
+      final apiKey = APIConfig.getApiKey('calorieninjas');
+      if (apiKey == null || apiKey.isEmpty) {
+        print('CalorieNinjas API key not configured');
+        return _tryLocalDatabase(ingredientsString);
       }
 
-      // If guessNutrition fails, try searching for the food
-      return await _searchFoodNutrition(foodName);
+      final uri = Uri.parse('https://api.calorieninjas.com/v1/nutrition');
+
+      print(
+        'Sending request to CalorieNinjas API with query: $ingredientsString',
+      );
+      final response = await http.get(
+        uri.replace(queryParameters: {'query': ingredientsString}),
+        headers: {'X-Api-Key': apiKey},
+      );
+
+      print('CalorieNinjas response status: ${response.statusCode}');
+      print('CalorieNinjas response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data != null &&
+            data is Map<String, dynamic> &&
+            data['items'] != null &&
+            data['items'] is List) {
+          final items = data['items'] as List;
+
+          if (items.isNotEmpty) {
+            return _processCalorieNinjasResponse(items, ingredientsString);
+          } else {
+            print('CalorieNinjas returned empty items list');
+          }
+        }
+      } else {
+        print(
+          'CalorieNinjas API error: ${response.statusCode} - ${response.body}',
+        );
+      }
+    } catch (e) {
+      print('Error in _getNutritionFromCalorieNinjas: $e');
     }
 
     // Try local database as fallback
-    return LocalFoodDatabase.searchFood(foodName);
+    return _tryLocalDatabase(ingredientsString);
   }
 
-  /// Search for food nutrition using Spoonacular search API
-  static Future<Map<String, dynamic>?> _searchFoodNutrition(
-    String foodName,
-  ) async {
-    final apiKey = APIConfig.getApiKey('spoonacular');
-    if (apiKey == null) return null;
+  /// Process CalorieNinjas API response and combine nutrition data
+  static Map<String, dynamic> _processCalorieNinjasResponse(
+    List items,
+    String originalQuery,
+  ) {
+    double totalCalories = 0.0;
+    double totalProtein = 0.0;
+    double totalCarbs = 0.0;
+    double totalFat = 0.0;
+    double totalFiber = 0.0;
+    double totalSugar = 0.0;
+    double totalSodium = 0.0;
+    double totalWeight = 0.0;
 
-    final encodedQuery = Uri.encodeComponent(foodName);
-    final uri = Uri.parse(
-      'https://api.spoonacular.com/food/ingredients/search?query=$encodedQuery&number=1&apiKey=$apiKey',
-    );
+    List<Map<String, dynamic>> ingredients = [];
+    String mainFoodName = 'Mixed Food Items';
 
-    final response = await http.get(uri);
+    // Extract main food name from the first item or original query
+    if (items.isNotEmpty) {
+      final firstItem = items[0];
+      if (firstItem is Map<String, dynamic> && firstItem['name'] != null) {
+        mainFoodName = _cleanFoodName(firstItem['name'].toString());
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final results = data['results'] as List;
-
-      if (results.isNotEmpty) {
-        final ingredientId = results.first['id'];
-
-        // Get nutrition data for this ingredient
-        final nutritionUri = Uri.parse(
-          'https://api.spoonacular.com/food/ingredients/$ingredientId/information?amount=100&unit=grams&apiKey=$apiKey',
-        );
-
-        final nutritionResponse = await http.get(nutritionUri);
-
-        if (nutritionResponse.statusCode == 200) {
-          final nutritionData = jsonDecode(nutritionResponse.body);
-          final nutrients = nutritionData['nutrition']['nutrients'] as List;
-
-          double calories = 0.0,
-              protein = 0.0,
-              carbs = 0.0,
-              fat = 0.0,
-              fiber = 0.0,
-              sugar = 0.0;
-
-          for (final nutrient in nutrients) {
-            final name = nutrient['name'].toString().toLowerCase();
-            final value = nutrient['amount'] ?? 0.0;
-
-            if (name.contains('calories'))
-              calories = value;
-            else if (name.contains('protein'))
-              protein = value;
-            else if (name.contains('carbohydrates'))
-              carbs = value;
-            else if (name.contains('fat'))
-              fat = value;
-            else if (name.contains('fiber'))
-              fiber = value;
-            else if (name.contains('sugar'))
-              sugar = value;
-          }
-
-          return {
-            'calories': calories,
-            'protein': protein,
-            'carbs': carbs,
-            'fat': fat,
-            'fiber': fiber,
-            'sugar': sugar,
-            'serving_weight': 100.0,
-            'serving_description': '100g',
-          };
+        // If multiple items, make it more descriptive
+        if (items.length > 1) {
+          mainFoodName =
+              '$mainFoodName and ${items.length - 1} other ingredient${items.length > 2 ? 's' : ''}';
         }
       }
     }
 
-    // Try local database as fallback
-    return LocalFoodDatabase.searchFood(foodName);
-  }
+    for (final item in items) {
+      if (item is Map<String, dynamic>) {
+        final calories = _parseDouble(item['calories']);
+        final protein = _parseDouble(item['protein_g']);
+        final carbs = _parseDouble(item['carbohydrates_total_g']);
+        final fat = _parseDouble(item['fat_total_g']);
+        final fiber = _parseDouble(item['fiber_g']);
+        final sugar = _parseDouble(item['sugar_g']);
+        final sodium =
+            _parseDouble(item['sodium_mg']) / 1000; // Convert mg to g
+        final weight = _parseDouble(item['serving_size_g']);
 
-  /// Combine AI recognition results with nutrition data
-  static Map<String, dynamic> _combineResults(
-    Map<String, dynamic> aiResult,
-    Map<String, dynamic>? nutritionData,
-  ) {
-    // Default to 100g if no weight is provided
-    final estimatedWeight = 100.0;
-    final servingWeight = nutritionData?['serving_weight'] ?? 100.0;
-    final weightRatio = estimatedWeight / servingWeight;
+        totalCalories += calories;
+        totalProtein += protein;
+        totalCarbs += carbs;
+        totalFat += fat;
+        totalFiber += fiber;
+        totalSugar += sugar;
+        totalSodium += sodium;
+        totalWeight += weight;
+
+        // Add to ingredients list
+        ingredients.add({
+          'name': item['name']?.toString() ?? 'Unknown',
+          'weight': '${weight.round()}g',
+          'calories': calories.round(),
+        });
+      }
+    }
 
     return {
-      'food_name': aiResult['food_name'],
-      'confidence': aiResult['confidence'],
-      'source': aiResult['source'],
-      'nutrition':
-          nutritionData != null
-              ? {
-                'calories': (nutritionData['calories'] * weightRatio).round(),
-                'protein': double.parse(
-                  (nutritionData['protein'] * weightRatio).toStringAsFixed(1),
-                ),
-                'carbs': double.parse(
-                  (nutritionData['carbs'] * weightRatio).toStringAsFixed(1),
-                ),
-                'fat': double.parse(
-                  (nutritionData['fat'] * weightRatio).toStringAsFixed(1),
-                ),
-                'fiber':
-                    nutritionData['fiber'] != null
-                        ? double.parse(
-                          (nutritionData['fiber'] * weightRatio)
-                              .toStringAsFixed(1),
-                        )
-                        : 0.0,
-                'sugar':
-                    nutritionData['sugar'] != null
-                        ? double.parse(
-                          (nutritionData['sugar'] * weightRatio)
-                              .toStringAsFixed(1),
-                        )
-                        : 0.0,
-              }
-              : _getDefaultNutrition(),
-      'ingredients': [aiResult['food_name']],
-      'serving_size': '${estimatedWeight.round()}g',
-      'raw_data': aiResult,
+      'food_name': mainFoodName,
+      'confidence': 0.85, // High confidence since we have detailed breakdown
+      'source': 'gemini_calorieninjas',
+      'nutrition': {
+        'calories': totalCalories.round(),
+        'protein': double.parse(totalProtein.toStringAsFixed(1)),
+        'carbs': double.parse(totalCarbs.toStringAsFixed(1)),
+        'fat': double.parse(totalFat.toStringAsFixed(1)),
+        'fiber': double.parse(totalFiber.toStringAsFixed(1)),
+        'sugar': double.parse(totalSugar.toStringAsFixed(1)),
+        'sodium': double.parse(totalSodium.toStringAsFixed(1)),
+      },
+      'ingredients': ingredients,
+      'serving_size': '${totalWeight.round()}g',
+      'detailed_breakdown': items,
+      'original_query': originalQuery,
     };
+  }
+
+  /// Try to get nutrition from local database as fallback
+  static Map<String, dynamic>? _tryLocalDatabase(String ingredientsString) {
+    try {
+      print('Trying local database with: $ingredientsString');
+      // Extract the first ingredient from the string for local lookup
+      final firstIngredient = ingredientsString.split(',').first.trim();
+      final ingredientName =
+          firstIngredient.replaceAll(RegExp(r'\d+g\s*'), '').trim();
+
+      final localData = LocalFoodDatabase.searchFood(ingredientName);
+      if (localData != null) {
+        return {
+          'food_name': _cleanFoodName(ingredientName),
+          'confidence': 0.6,
+          'source': 'local_database',
+          'nutrition': {
+            'calories': localData['calories'],
+            'protein': localData['protein'],
+            'carbs': localData['carbs'],
+            'fat': localData['fat'],
+            'fiber': localData['fiber'] ?? 0.0,
+            'sugar': localData['sugar'] ?? 0.0,
+            'sodium': 0.0,
+          },
+          'ingredients': [
+            {
+              'name': ingredientName,
+              'weight': '100g',
+              'calories': localData['calories'],
+            },
+          ],
+          'serving_size': localData['serving_size'] ?? '100g',
+        };
+      } else {
+        print('No match found in local database for: $ingredientName');
+      }
+    } catch (e) {
+      print('Error in _tryLocalDatabase: $e');
+    }
+    return null;
+  }
+
+  /// Safely parse a value to double
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value) ?? 0.0;
+    }
+    return 0.0;
   }
 
   /// Clean and standardize food names
   static String _cleanFoodName(String rawName) {
+    if (rawName.isEmpty) return 'Unknown Food';
+
     return rawName
         .toLowerCase()
         .split(' ')
@@ -356,7 +350,7 @@ class AIFoodService {
         .replaceAll(RegExp(r'[^\w\s]'), '');
   }
 
-  /// Default nutrition values when API fails
+  /// Default nutrition values when all services fail
   static Map<String, dynamic> _getDefaultNutrition() {
     return {
       'calories': 150,
@@ -365,6 +359,7 @@ class AIFoodService {
       'fat': 8.0,
       'fiber': 3.0,
       'sugar': 5.0,
+      'sodium': 0.2,
     };
   }
 
@@ -375,7 +370,9 @@ class AIFoodService {
       'confidence': 0.5,
       'source': 'default',
       'nutrition': _getDefaultNutrition(),
-      'ingredients': ['Unknown'],
+      'ingredients': [
+        {'name': 'Unknown', 'weight': '100g', 'calories': 150},
+      ],
       'serving_size': '100g',
       'description': 'Could not identify food item. Please edit manually.',
     };

@@ -27,7 +27,6 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
 
   void _saveToMealPlan() {
     // Here you would save the food item to Firebase
-    // For now, we'll just show a success message
     showDialog(
       context: context,
       builder:
@@ -51,7 +50,6 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
   }
 
   void _editNutrition() async {
-    // Navigate to edit page and wait for result
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -71,6 +69,7 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
     final nutrition = _nutritionData['nutrition'] as Map<String, dynamic>;
     final ingredients = _nutritionData['ingredients'] as List<dynamic>;
     final confidence = ((_nutritionData['confidence'] as double) * 100).round();
+    final source = _nutritionData['source'] as String;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -135,26 +134,55 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          confidence > 80
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$confidence% confidence',
-                      style: TextStyle(
-                        color: confidence > 80 ? Colors.green : Colors.orange,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              confidence > 80
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$confidence% confidence',
+                          style: TextStyle(
+                            color:
+                                confidence > 80 ? Colors.green : Colors.orange,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          source == 'gemini_calorieninjas'
+                              ? 'AI Powered'
+                              : source == 'local_database'
+                              ? 'Local DB'
+                              : 'Default',
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -190,7 +218,7 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Per ${_nutritionData['serving_size']}',
+                    'Total weight: ${_nutritionData['serving_size']}',
                     style: const TextStyle(color: Colors.black54, fontSize: 14),
                   ),
                   const SizedBox(height: 16),
@@ -214,6 +242,33 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                       ),
                     ],
                   ),
+                  if (nutrition['fiber'] != null && nutrition['fiber'] > 0) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _NutritionItem(
+                          label: 'Fiber',
+                          value: '${nutrition['fiber']}g',
+                          color: Colors.green,
+                        ),
+                        _NutritionItem(
+                          label: 'Sugar',
+                          value: '${nutrition['sugar']}g',
+                          color: Colors.purple,
+                        ),
+                        if (nutrition['sodium'] != null &&
+                            nutrition['sodium'] > 0)
+                          _NutritionItem(
+                            label: 'Sodium',
+                            value: '${nutrition['sodium']}g',
+                            color: Colors.grey,
+                          )
+                        else
+                          const SizedBox(),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -226,34 +281,53 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ...ingredients
-                .map(
-                  (ingredient) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+            ...ingredients.map((ingredient) {
+              final name = ingredient['name'] ?? 'Unknown';
+              final weight = ingredient['weight'] ?? '0g';
+              final calories = ingredient['calories']?.toString() ?? '0';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '$calories cal',
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
+                    Text(
+                      weight,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          ingredient['name'],
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          ingredient['amount'],
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
+                  ],
+                ),
+              );
+            }).toList(),
 
             const SizedBox(height: 32),
 
@@ -341,6 +415,7 @@ class _NutritionItem extends StatelessWidget {
   }
 }
 
+// Keep the EditNutritionPage class from the previous implementation
 class EditNutritionPage extends StatefulWidget {
   final Map<String, dynamic> nutritionData;
 
@@ -398,10 +473,13 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
     updatedData['food_name'] = _nameController.text;
     updatedData['serving_size'] = _servingSizeController.text;
     updatedData['nutrition'] = {
-      'calories': double.tryParse(_caloriesController.text) ?? 0,
-      'protein': double.tryParse(_proteinController.text) ?? 0,
-      'carbs': double.tryParse(_carbsController.text) ?? 0,
-      'fat': double.tryParse(_fatController.text) ?? 0,
+      'calories': int.tryParse(_caloriesController.text) ?? 0,
+      'protein': double.tryParse(_proteinController.text) ?? 0.0,
+      'carbs': double.tryParse(_carbsController.text) ?? 0.0,
+      'fat': double.tryParse(_fatController.text) ?? 0.0,
+      'fiber': updatedData['nutrition']['fiber'] ?? 0.0,
+      'sugar': updatedData['nutrition']['sugar'] ?? 0.0,
+      'sodium': updatedData['nutrition']['sodium'] ?? 0.0,
     };
 
     Navigator.pop(context, updatedData);

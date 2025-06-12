@@ -1,23 +1,34 @@
-// dashboard_screen.dart
+// Updated home.dart with scan functionality
 import 'package:flutter/material.dart';
 import 'edit_food.dart';
 import 'daily_nutrition.dart';
+import 'food_scanner.dart'; // Add this import
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = screenWidth > 600 ? 32.0 : 20.0;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+      appBar: AppBar(title: Text("Home")),
+      body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Top bar with avatar, welcome, and icons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+
+            Text("Welcome to BiteWise!", style: TextStyle(fontSize: 24)),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/profile'),
+              child: Text("Go to Profile"),
+            ),
+
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.symmetric(horizontal: padding),
                 children: [
                   // Avatar
                   CircleAvatar(
@@ -164,7 +175,16 @@ class HomePage extends StatelessWidget {
                         child: Icon(Icons.calendar_today, color: Color(0xFFB0B0B0)),
                       ),
                       SizedBox(width: 48), // Space for FAB
-                      Icon(Icons.bar_chart, color: Color(0xFFB0B0B0)),
+                      // Add scan button
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => FoodScannerPage()),
+                          );
+                        },
+                        child: Icon(Icons.camera_alt, color: Color(0xFFB0B0B0)),
+                      ),
                       Icon(Icons.person, color: Color(0xFFB0B0B0)),
                     ],
                   ),
@@ -174,9 +194,41 @@ class HomePage extends StatelessWidget {
                   child: FloatingActionButton(
                     backgroundColor: Color(0xFFD6F36B),
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AddFoodPage()),
+                      // Show options: Manual Add or Scan
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (context) => Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: Icon(Icons.camera_alt, color: Color(0xFFFF7A4D)),
+                                title: Text('Scan Food'),
+                                subtitle: Text('Use camera to identify food'),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => FoodScannerPage()),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: Icon(Icons.edit, color: Color(0xFFFF7A4D)),
+                                title: Text('Add Manually'),
+                                subtitle: Text('Enter food details manually'),
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => AddFoodPage()),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                     child: Icon(Icons.add, color: Colors.white, size: 32),
@@ -191,11 +243,16 @@ class HomePage extends StatelessWidget {
   }
 }
 
+// Keep the existing _DayItem and _MealCard classes unchanged
 class _DayItem extends StatelessWidget {
   final String day;
   final String date;
   final bool selected;
-  const _DayItem({required this.day, required this.date, this.selected = false});
+  const _DayItem({
+    required this.day,
+    required this.date,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +261,7 @@ class _DayItem extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           decoration: BoxDecoration(
-            color: selected ? Color(0xFFD6F36B) : Colors.transparent,
+            color: selected ? const Color(0xFFD6F36B) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -232,7 +289,11 @@ class _MealCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
-  const _MealCard({required this.title, required this.subtitle, required this.icon});
+  const _MealCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -242,14 +303,15 @@ class _MealCard extends StatelessWidget {
       elevation: 2,
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Color(0xFFD6F36B),
+          backgroundColor: const Color(0xFFD6F36B),
           child: Icon(icon, color: Colors.black),
         ),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
-        trailing: Icon(Icons.check_circle, color: Color(0xFFD6F36B)),
+        trailing: const Icon(Icons.check_circle, color: Color(0xFFD6F36B)),
         onTap: () {},
       ),
     );
   }
 }
+

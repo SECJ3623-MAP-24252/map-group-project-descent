@@ -1,4 +1,3 @@
-// login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,16 +14,18 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final paddingHorizontal = screenWidth > 600 ? 64.0 : 24.0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D0D),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              // Logo Placeholder
               Center(
                 child: Container(
                   width: 120,
@@ -52,63 +53,29 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 8),
               const Text(
                 "Sign in to continue",
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
               const SizedBox(height: 40),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Email",
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    prefixIcon: const Icon(Icons.email_outlined, color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFF1A1A1A),
-                  ),
-                ),
+              _buildTextField(
+                hintText: "Email",
+                icon: Icons.email_outlined,
+                obscure: false,
               ),
               const SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A1A),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: "Password",
-                    hintStyle: const TextStyle(color: Colors.grey),
-                    prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFF1A1A1A),
+              _buildTextField(
+                hintText: "Password",
+                icon: Icons.lock_outline,
+                obscure: _obscurePassword,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
                   ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
               ),
               const SizedBox(height: 16),
@@ -118,34 +85,16 @@ class _LoginPageState extends State<LoginPage> {
                   onPressed: () => Navigator.pushNamed(context, '/forget'),
                   child: const Text(
                     "Forgot Password?",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text(
-                    "Sign In",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0D0D0D),
-                    ),
-                  ),
-                ),
+              _buildButton(
+                text: "Sign In",
+                onPressed: () => Navigator.pushNamed(context, '/'),
+                background: Colors.white,
+                textColor: const Color(0xFF0D0D0D),
               ),
               const SizedBox(height: 24),
               Row(
@@ -153,37 +102,18 @@ class _LoginPageState extends State<LoginPage> {
                   Expanded(child: Divider(color: Colors.grey)),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      "OR",
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                    child: Text("OR", style: TextStyle(color: Colors.grey)),
                   ),
                   Expanded(child: Divider(color: Colors.grey)),
                 ],
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleGoogleSignIn(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  icon: const Icon(Icons.g_mobiledata, size: 32),
-                  label: const Text(
-                    "Continue with Google",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+              _buildButton(
+                text: "Continue with Google",
+                onPressed: () => _handleGoogleSignIn(context),
+                icon: const Icon(Icons.g_mobiledata, size: 32),
               ),
-              const Spacer(),
+              const SizedBox(height: 32),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -210,6 +140,67 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+  Widget _buildTextField({
+    required String hintText,
+    required IconData icon,
+    required bool obscure,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: TextField(
+        obscureText: obscure,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.grey),
+          prefixIcon: Icon(icon, color: Colors.grey),
+          suffixIcon: suffixIcon,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: const Color(0xFF1A1A1A),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton({
+    required String text,
+    required VoidCallback onPressed,
+    Color background = const Color(0xFF1A1A1A),
+    Color textColor = Colors.white,
+    Widget? icon,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: icon ?? const SizedBox.shrink(),
+        label: Text(
+          text,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -218,25 +209,27 @@ final FirebaseAuth _auth = FirebaseAuth.instance;
 Future<void> _handleGoogleSignIn(BuildContext context) async {
   try {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    final GoogleSignInAuthentication googleAuth = 
+    final GoogleSignInAuthentication googleAuth =
         await googleUser!.authentication;
-    
+
     final AuthCredential credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
-    
-    final UserCredential userCredential = 
-        await _auth.signInWithCredential(credential);
-    
+
+    final UserCredential userCredential = await _auth.signInWithCredential(
+      credential,
+    );
+
     Navigator.pushNamed(context, '/'); // Redirect to HomePage
   } catch (e) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Error"),
-        content: Text("Failed to sign in with Google: $e"),
-      ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Error"),
+            content: Text("Failed to sign in with Google: $e"),
+          ),
     );
   }
 }

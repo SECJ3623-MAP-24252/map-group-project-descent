@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'edit_food.dart';
 
 class FoodScanResultsPage extends StatefulWidget {
   final File imageFile;
@@ -18,23 +17,59 @@ class FoodScanResultsPage extends StatefulWidget {
 
 class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
   late Map<String, dynamic> _nutritionData;
+  String _selectedMealType = 'Breakfast';
+  final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
   @override
   void initState() {
     super.initState();
     _nutritionData = Map.from(widget.nutritionData);
+
+    // Auto-select meal type based on time
+    final hour = DateTime.now().hour;
+    if (hour < 11) {
+      _selectedMealType = 'Breakfast';
+    } else if (hour < 16) {
+      _selectedMealType = 'Lunch';
+    } else if (hour < 21) {
+      _selectedMealType = 'Dinner';
+    } else {
+      _selectedMealType = 'Snack';
+    }
   }
 
   void _saveToMealPlan() {
-    // Here you would save the food item to Firebase
-    // For now, we'll just show a success message
+    // Create meal data structure
+    final mealData = {
+      'name': _nutritionData['food_name'],
+      'type': _selectedMealType,
+      'calories': _nutritionData['nutrition']['calories'],
+      'time': TimeOfDay.now().format(context),
+      'nutrition': _nutritionData['nutrition'],
+      'ingredients': _nutritionData['ingredients'],
+      'serving_size': _nutritionData['serving_size'],
+      'source': 'ai_scan',
+      'image_path': widget.imageFile.path,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    // In a real app, you would save this to Firebase
+    // For now, just show success and navigate back
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('Success!'),
-            content: Text(
-              '${_nutritionData['food_name']} has been added to your meal plan.',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  '${_nutritionData['food_name']} has been added to your $_selectedMealType.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -45,13 +80,22 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                 },
                 child: const Text('OK'),
               ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pushNamed(
+                    context,
+                    '/nutrition',
+                  ); // Go to nutrition page
+                },
+                child: const Text('View Nutrition'),
+              ),
             ],
           ),
     );
   }
 
   void _editNutrition() async {
-    // Navigate to edit page and wait for result
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -71,6 +115,7 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
     final nutrition = _nutritionData['nutrition'] as Map<String, dynamic>;
     final ingredients = _nutritionData['ingredients'] as List<dynamic>;
     final confidence = ((_nutritionData['confidence'] as double) * 100).round();
+    final source = _nutritionData['source'] as String;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -135,32 +180,97 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          confidence > 80
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '$confidence% confidence',
-                      style: TextStyle(
-                        color: confidence > 80 ? Colors.green : Colors.orange,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              confidence > 80
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$confidence% confidence',
+                          style: TextStyle(
+                            color:
+                                confidence > 80 ? Colors.green : Colors.orange,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          source == 'gemini_calorieninjas'
+                              ? 'AI Powered'
+                              : source == 'local_database'
+                              ? 'Local DB'
+                              : 'Default',
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+
+            // Meal Type Selection
+            const Text(
+              'Add to Meal',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedMealType,
+                  isExpanded: true,
+                  items:
+                      _mealTypes
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedMealType = value!;
+                    });
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
 
             // Nutrition Summary Card
             Container(
@@ -190,7 +300,7 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Per ${_nutritionData['serving_size']}',
+                    'Total weight: ${_nutritionData['serving_size']}',
                     style: const TextStyle(color: Colors.black54, fontSize: 14),
                   ),
                   const SizedBox(height: 16),
@@ -214,6 +324,33 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                       ),
                     ],
                   ),
+                  if (nutrition['fiber'] != null && nutrition['fiber'] > 0) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _NutritionItem(
+                          label: 'Fiber',
+                          value: '${nutrition['fiber']}g',
+                          color: Colors.green,
+                        ),
+                        _NutritionItem(
+                          label: 'Sugar',
+                          value: '${nutrition['sugar']}g',
+                          color: Colors.purple,
+                        ),
+                        if (nutrition['sodium'] != null &&
+                            nutrition['sodium'] > 0)
+                          _NutritionItem(
+                            label: 'Sodium',
+                            value: '${nutrition['sodium']}g',
+                            color: Colors.grey,
+                          )
+                        else
+                          const SizedBox(),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -226,34 +363,53 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ...ingredients
-                .map(
-                  (ingredient) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+            ...ingredients.map((ingredient) {
+              final name = ingredient['name'] ?? 'Unknown';
+              final weight = ingredient['weight'] ?? '0g';
+              final calories = ingredient['calories']?.toString() ?? '0';
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          Text(
+                            '$calories cal',
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
+                    Text(
+                      weight,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          ingredient['name'],
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          ingredient['amount'],
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
+                  ],
+                ),
+              );
+            }).toList(),
 
             const SizedBox(height: 32),
 
@@ -270,9 +426,9 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text(
-                      'Add to Meal Plan',
-                      style: TextStyle(
+                    child: Text(
+                      'Add to $_selectedMealType',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -341,6 +497,7 @@ class _NutritionItem extends StatelessWidget {
   }
 }
 
+// Keep the EditNutritionPage class from the previous implementation
 class EditNutritionPage extends StatefulWidget {
   final Map<String, dynamic> nutritionData;
 
@@ -398,10 +555,13 @@ class _EditNutritionPageState extends State<EditNutritionPage> {
     updatedData['food_name'] = _nameController.text;
     updatedData['serving_size'] = _servingSizeController.text;
     updatedData['nutrition'] = {
-      'calories': double.tryParse(_caloriesController.text) ?? 0,
-      'protein': double.tryParse(_proteinController.text) ?? 0,
-      'carbs': double.tryParse(_carbsController.text) ?? 0,
-      'fat': double.tryParse(_fatController.text) ?? 0,
+      'calories': int.tryParse(_caloriesController.text) ?? 0,
+      'protein': double.tryParse(_proteinController.text) ?? 0.0,
+      'carbs': double.tryParse(_carbsController.text) ?? 0.0,
+      'fat': double.tryParse(_fatController.text) ?? 0.0,
+      'fiber': updatedData['nutrition']['fiber'] ?? 0.0,
+      'sugar': updatedData['nutrition']['sugar'] ?? 0.0,
+      'sodium': updatedData['nutrition']['sodium'] ?? 0.0,
     };
 
     Navigator.pop(context, updatedData);

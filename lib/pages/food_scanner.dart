@@ -96,7 +96,6 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
       await _analyzeFood(File(image.path));
     } catch (e) {
       _showErrorDialog('Failed to capture image: $e');
-    } finally {
       setState(() {
         _isProcessing = false;
         _processingStatus = '';
@@ -122,10 +121,14 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
 
       if (image != null) {
         await _analyzeFood(File(image.path));
+      } else {
+        setState(() {
+          _isProcessing = false;
+          _processingStatus = '';
+        });
       }
     } catch (e) {
       _showErrorDialog('Failed to pick image: $e');
-    } finally {
       setState(() {
         _isProcessing = false;
         _processingStatus = '';
@@ -136,13 +139,18 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
   Future<void> _analyzeFood(File imageFile) async {
     try {
       setState(() {
-        _processingStatus = 'Analyzing food with AI...';
+        _processingStatus = 'Analyzing with Gemini AI...';
       });
 
-      // Use the real AI service
+      // Use the updated AI service
       final nutritionData = await AIFoodService.analyzeFoodImage(imageFile);
 
       if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _processingStatus = '';
+        });
+
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -156,6 +164,10 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
       }
     } catch (e) {
       _showErrorDialog('Failed to analyze food: $e');
+      setState(() {
+        _isProcessing = false;
+        _processingStatus = '';
+      });
     }
   }
 
@@ -213,7 +225,7 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
                           ),
                           const SizedBox(height: 16),
                           const Text(
-                            'This app uses Spoonacular for nutrition data and Clarifai for food recognition.',
+                            'This app uses Gemini for food recognition and CalorieNinjas for nutrition data.',
                             style: TextStyle(fontSize: 14),
                           ),
                         ],

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../services/user_service.dart';
+import '../models/user_model.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _userService = UserService();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -23,16 +26,32 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  Future<void> _createOrUpdateUserData(User user) async {
+    final userModel = UserModel(
+      uid: user.uid,
+      email: user.email!,
+      displayName: user.displayName,
+      photoURL: user.photoURL,
+      createdAt: user.metadata.creationTime ?? DateTime.now(),
+      lastLoginAt: DateTime.now(),
+    );
+    await _userService.createOrUpdateUser(userModel);
+  }
+
   Future<void> _signInWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
+      if (userCredential.user != null) {
+        await _createOrUpdateUserData(userCredential.user!);
+      }
 
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/');
@@ -92,7 +111,11 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
 
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      if (userCredential.user != null) {
+        await _createOrUpdateUserData(userCredential.user!);
+      }
 
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/');

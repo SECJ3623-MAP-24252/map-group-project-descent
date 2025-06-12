@@ -9,6 +9,7 @@ import 'pages/profile.dart';
 import 'pages/food_scanner.dart';
 import 'pages/daily_nutrition.dart';
 import 'pages/edit_food.dart';
+import 'pages/edit_profile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +44,8 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfilePage(),
         '/scanner': (context) => const FoodScannerPage(),
         '/nutrition': (context) => const DailyNutritionPage(),
-        '/add-food': (context) => const AddFoodPage(),
+        '/add-food': (context) => const EditFoodPage(),
+        '/edit-profile': (context) => const EditProfilePage(),
       },
       onGenerateRoute: (settings) {
         // Handle dynamic routes if needed

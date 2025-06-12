@@ -14,14 +14,14 @@ class HomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-<<<<<<< Updated upstream
+
             Text("Welcome to BiteWise!", style: TextStyle(fontSize: 24)),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => Navigator.pushNamed(context, '/profile'),
               child: Text("Go to Profile"),
             ),
-=======
+
             Expanded(
               child: ListView(
                 padding: EdgeInsets.symmetric(horizontal: padding),
@@ -54,15 +54,15 @@ class HomePage extends StatelessWidget {
               ),
             ),
             _buildBottomBarWithFAB(context),
->>>>>>> Stashed changes
+
           ],
         ),
       ),
     );
   }
-<<<<<<< Updated upstream
+
 }
-=======
+
 
   Widget _buildTopBar() {
     return Row(
@@ -279,4 +279,4 @@ class _MealCard extends StatelessWidget {
     );
   }
 }
->>>>>>> Stashed changes
+

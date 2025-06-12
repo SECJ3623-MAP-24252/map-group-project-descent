@@ -1,11 +1,138 @@
-// Updated home.dart with scan functionality
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'edit_food.dart';
 import 'daily_nutrition.dart';
-import 'food_scanner.dart'; // Add this import
+import 'food_scanner.dart';
+import 'profile.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+  final User? _currentUser = FirebaseAuth.instance.currentUser;
+
+  // Sample data - in a real app, this would come from Firebase
+  final List<Map<String, dynamic>> _todaysMeals = [
+    {
+      'name': 'Breakfast',
+      'items': ['Oatmeal with berries', 'Coffee'],
+      'calories': 320,
+      'time': '8:30 AM',
+    },
+    {
+      'name': 'Lunch',
+      'items': ['Grilled chicken salad'],
+      'calories': 450,
+      'time': '12:30 PM',
+    },
+  ];
+
+  int get _totalCalories {
+    return _todaysMeals.fold(0, (sum, meal) => sum + (meal['calories'] as int));
+  }
+
+  String _getDisplayName() {
+    if (_currentUser?.displayName != null &&
+        _currentUser!.displayName!.isNotEmpty) {
+      return _currentUser!.displayName!.split(' ').first;
+    }
+    return "User";
+  }
+
+  void _onBottomNavTap(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        // Already on home
+        break;
+      case 1:
+        Navigator.pushNamed(context, '/nutrition');
+        break;
+      case 2:
+        _showAddFoodOptions();
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/profile');
+        break;
+    }
+  }
+
+  void _showAddFoodOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Add Food',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Color(0xFFFF7A4D),
+                    ),
+                  ),
+                  title: const Text('Scan Food'),
+                  subtitle: const Text('Use camera to identify food'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/scanner');
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit, color: Color(0xFFFF7A4D)),
+                  ),
+                  title: const Text('Add Manually'),
+                  subtitle: const Text('Enter food details manually'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/add-food');
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,35 +148,72 @@ class HomePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Avatar
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundImage: AssetImage('assets/icons/logo.png'), // Placeholder
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, '/profile'),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: const Color(0xFFD6F36B),
+                      child:
+                          _currentUser?.photoURL != null
+                              ? ClipRRect(
+                                borderRadius: BorderRadius.circular(24),
+                                child: Image.network(
+                                  _currentUser!.photoURL!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.person,
+                                      color: Colors.black,
+                                      size: 24,
+                                    );
+                                  },
+                                ),
+                              )
+                              : const Icon(
+                                Icons.person,
+                                color: Colors.black,
+                                size: 24,
+                              ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   // Welcome and name
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
+                      children: [
+                        const Text(
                           'Welcome,',
                           style: TextStyle(fontSize: 16, color: Colors.black54),
                         ),
                         Text(
-                          'Abdulrahman',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          _getDisplayName(),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   // Notification and settings icons
                   IconButton(
-                    icon: Icon(Icons.notifications_none, color: Colors.black54),
-                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.black54,
+                    ),
+                    onPressed: () {
+                      // TODO: Implement notifications
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Notifications coming soon!'),
+                        ),
+                      );
+                    },
                   ),
                   IconButton(
-                    icon: Icon(Icons.settings, color: Colors.black54),
-                    onPressed: () {},
+                    icon: const Icon(Icons.settings, color: Colors.black54),
+                    onPressed: () => Navigator.pushNamed(context, '/profile'),
                   ),
                 ],
               ),
@@ -59,8 +223,8 @@ class HomePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     'Track your diet\njourney',
                     style: TextStyle(
                       fontSize: 24,
@@ -68,10 +232,10 @@ class HomePage extends StatelessWidget {
                       height: 1.2,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    "Today's Calories Consumed: 1783",
-                    style: TextStyle(
+                    "Today's Calories Consumed: $_totalCalories",
+                    style: const TextStyle(
                       color: Color(0xFFE57373),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
@@ -80,18 +244,66 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            // Graph placeholder
+            // Calories progress card
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
               child: Container(
-                height: 120,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFD6F36B).withOpacity(0.8),
+                      const Color(0xFFD6F36B).withOpacity(0.6),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Center(
-                  child: Text('Graph Placeholder'),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Daily Goal',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            Text(
+                              '$_totalCalories / 2000 cal',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        CircularProgressIndicator(
+                          value: _totalCalories / 2000,
+                          backgroundColor: Colors.white.withOpacity(0.3),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.black,
+                          ),
+                          strokeWidth: 6,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildNutrientInfo('Protein', '45g', Colors.blue),
+                        _buildNutrientInfo('Carbs', '120g', Colors.orange),
+                        _buildNutrientInfo('Fat', '35g', Colors.red),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -111,134 +323,114 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             // Meals list
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: [
-                  _MealCard(
-                    title: 'Add Breakfast',
-                    subtitle: 'Recommended 450-650 cal',
-                    icon: Icons.free_breakfast,
+                  const Text(
+                    "Today's Meals",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  _MealCard(
-                    title: 'Add Lunch',
-                    subtitle: 'Recommended 450-650 cal',
-                    icon: Icons.lunch_dining,
-                  ),
-                  _MealCard(
+                  const SizedBox(height: 12),
+                  ..._todaysMeals
+                      .map(
+                        (meal) => _MealCard(
+                          title: meal['name'],
+                          items: List<String>.from(meal['items']),
+                          calories: meal['calories'],
+                          time: meal['time'],
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/edit-food',
+                              arguments: {'foodData': meal},
+                            );
+                          },
+                        ),
+                      )
+                      .toList(),
+                  _AddMealCard(
                     title: 'Add Dinner',
                     subtitle: 'Recommended 450-650 cal',
                     icon: Icons.dinner_dining,
+                    onTap: _showAddFoodOptions,
                   ),
                 ],
               ),
             ),
-            // Bottom bar and add button
-            Stack(
-              alignment: Alignment.bottomCenter,
-              children: [
-                Container(
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 8,
-                        offset: Offset(0, -2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      Icon(Icons.home, color: Color(0xFFB0B0B0)),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => DailyNutritionPage()),
-                          );
-                        },
-                        child: Icon(Icons.calendar_today, color: Color(0xFFB0B0B0)),
-                      ),
-                      SizedBox(width: 48), // Space for FAB
-                      // Add scan button
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => FoodScannerPage()),
-                          );
-                        },
-                        child: Icon(Icons.camera_alt, color: Color(0xFFB0B0B0)),
-                      ),
-                      Icon(Icons.person, color: Color(0xFFB0B0B0)),
-                    ],
-                  ),
-                ),
-                Positioned(
-                  bottom: 20,
-                  child: FloatingActionButton(
-                    backgroundColor: Color(0xFFD6F36B),
-                    onPressed: () {
-                      // Show options: Manual Add or Scan
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) => Container(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ListTile(
-                                leading: Icon(Icons.camera_alt, color: Color(0xFFFF7A4D)),
-                                title: Text('Scan Food'),
-                                subtitle: Text('Use camera to identify food'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => FoodScannerPage()),
-                                  );
-                                },
-                              ),
-                              ListTile(
-                                leading: Icon(Icons.edit, color: Color(0xFFFF7A4D)),
-                                title: Text('Add Manually'),
-                                subtitle: Text('Enter food details manually'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => AddFoodPage()),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                    child: Icon(Icons.add, color: Colors.white, size: 32),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onBottomNavTap,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: const Color(0xFFFF7A4D),
+          unselectedItemColor: const Color(0xFFB0B0B0),
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_today),
+              label: 'Nutrition',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'Add'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFD6F36B),
+        onPressed: () => Navigator.pushNamed(context, '/scanner'),
+        child: const Icon(Icons.camera_alt, color: Colors.black, size: 28),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildNutrientInfo(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+      ],
     );
   }
 }
 
-// Keep the existing _DayItem and _MealCard classes unchanged
 class _DayItem extends StatelessWidget {
   final String day;
   final String date;
   final bool selected;
-  const _DayItem({required this.day, required this.date, this.selected = false});
+  const _DayItem({
+    required this.day,
+    required this.date,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +439,7 @@ class _DayItem extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           decoration: BoxDecoration(
-            color: selected ? Color(0xFFD6F36B) : Colors.transparent,
+            color: selected ? const Color(0xFFD6F36B) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
@@ -273,9 +465,18 @@ class _DayItem extends StatelessWidget {
 
 class _MealCard extends StatelessWidget {
   final String title;
-  final String subtitle;
-  final IconData icon;
-  const _MealCard({required this.title, required this.subtitle, required this.icon});
+  final List<String> items;
+  final int calories;
+  final String time;
+  final VoidCallback onTap;
+
+  const _MealCard({
+    required this.title,
+    required this.items,
+    required this.calories,
+    required this.time,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -283,15 +484,102 @@ class _MealCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Color(0xFFD6F36B),
-          child: Icon(icon, color: Colors.black),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    time,
+                    style: const TextStyle(color: Colors.black54, fontSize: 12),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...items
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        '• $item',
+                        style: const TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                  )
+                  .toList(),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '$calories calories',
+                    style: const TextStyle(
+                      color: Color(0xFFFF7A4D),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.black54,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: Icon(Icons.check_circle, color: Color(0xFFD6F36B)),
-        onTap: () {},
+      ),
+    );
+  }
+}
+
+class _AddMealCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _AddMealCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: const Color(0xFFD6F36B),
+            child: Icon(icon, color: Colors.black),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(subtitle),
+          trailing: const Icon(Icons.add_circle, color: Color(0xFFD6F36B)),
+        ),
       ),
     );
   }

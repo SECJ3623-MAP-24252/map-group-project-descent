@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'edit_food.dart';
 
 class FoodScanResultsPage extends StatefulWidget {
   final File imageFile;
@@ -18,22 +17,59 @@ class FoodScanResultsPage extends StatefulWidget {
 
 class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
   late Map<String, dynamic> _nutritionData;
+  String _selectedMealType = 'Breakfast';
+  final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
   @override
   void initState() {
     super.initState();
     _nutritionData = Map.from(widget.nutritionData);
+
+    // Auto-select meal type based on time
+    final hour = DateTime.now().hour;
+    if (hour < 11) {
+      _selectedMealType = 'Breakfast';
+    } else if (hour < 16) {
+      _selectedMealType = 'Lunch';
+    } else if (hour < 21) {
+      _selectedMealType = 'Dinner';
+    } else {
+      _selectedMealType = 'Snack';
+    }
   }
 
   void _saveToMealPlan() {
-    // Here you would save the food item to Firebase
+    // Create meal data structure
+    final mealData = {
+      'name': _nutritionData['food_name'],
+      'type': _selectedMealType,
+      'calories': _nutritionData['nutrition']['calories'],
+      'time': TimeOfDay.now().format(context),
+      'nutrition': _nutritionData['nutrition'],
+      'ingredients': _nutritionData['ingredients'],
+      'serving_size': _nutritionData['serving_size'],
+      'source': 'ai_scan',
+      'image_path': widget.imageFile.path,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    // In a real app, you would save this to Firebase
+    // For now, just show success and navigate back
     showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: const Text('Success!'),
-            content: Text(
-              '${_nutritionData['food_name']} has been added to your meal plan.',
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  '${_nutritionData['food_name']} has been added to your $_selectedMealType.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
             actions: [
               TextButton(
@@ -43,6 +79,16 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                   Navigator.pop(context); // Go back to home
                 },
                 child: const Text('OK'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pushNamed(
+                    context,
+                    '/nutrition',
+                  ); // Go to nutrition page
+                },
+                child: const Text('View Nutrition'),
               ),
             ],
           ),
@@ -188,7 +234,43 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+
+            // Meal Type Selection
+            const Text(
+              'Add to Meal',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedMealType,
+                  isExpanded: true,
+                  items:
+                      _mealTypes
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedMealType = value!;
+                    });
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
 
             // Nutrition Summary Card
             Container(
@@ -344,9 +426,9 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text(
-                      'Add to Meal Plan',
-                      style: TextStyle(
+                    child: Text(
+                      'Add to $_selectedMealType',
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),

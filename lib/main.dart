@@ -1,21 +1,22 @@
-import 'package:bitewise/pages/home.dart';
-import 'package:bitewise/pages/login.dart';
-import 'package:bitewise/pages/register.dart';
-import 'package:bitewise/pages/forget.dart';
-import 'package:bitewise/pages/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'pages/home.dart';
+import 'pages/login.dart';
+import 'pages/register.dart';
+import 'pages/forget.dart';
+import 'pages/profile.dart';
+import 'pages/food_scanner.dart';
+import 'pages/daily_nutrition.dart';
+import 'pages/edit_food.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Initialize Firebase
+  await Firebase.initializeApp();
 
   // Check if user is already logged in
   FirebaseAuth auth = FirebaseAuth.instance;
   User? user = auth.currentUser;
-
 
   runApp(MyApp(initialRoute: user != null ? '/' : '/login'));
 }
@@ -28,7 +29,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: 'Poppins'),
+      theme: ThemeData(
+        fontFamily: 'Poppins',
+        primarySwatch: Colors.green,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
       initialRoute: initialRoute,
       routes: {
         '/': (context) => const HomePage(),
@@ -36,6 +41,21 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forget': (context) => const ForgetPage(),
         '/profile': (context) => const ProfilePage(),
+        '/scanner': (context) => const FoodScannerPage(),
+        '/nutrition': (context) => const DailyNutritionPage(),
+        '/add-food': (context) => const AddFoodPage(),
+      },
+      onGenerateRoute: (settings) {
+        // Handle dynamic routes if needed
+        switch (settings.name) {
+          case '/edit-food':
+            final args = settings.arguments as Map<String, dynamic>?;
+            return MaterialPageRoute(
+              builder: (context) => EditFoodPage(foodData: args?['foodData']),
+            );
+          default:
+            return null;
+        }
       },
     );
   }

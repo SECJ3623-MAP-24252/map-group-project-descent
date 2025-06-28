@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
+import '../services/firebase_service.dart';
 import 'base_viewmodel.dart';
 
 class AuthViewModel extends BaseViewModel {
@@ -17,7 +18,7 @@ class AuthViewModel extends BaseViewModel {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
-  void _onAuthStateChanged(User? user) {
+  void _onAuthStateChanged(User? user) async {
     if (user != null) {
       _currentUser = UserModel(
         uid: user.uid,
@@ -27,6 +28,9 @@ class AuthViewModel extends BaseViewModel {
         createdAt: user.metadata.creationTime,
       );
       _isAuthenticated = true;
+      
+      // Save user to Firebase Firestore
+      await FirebaseService.saveUser(_currentUser!);
     } else {
       _currentUser = null;
       _isAuthenticated = false;
@@ -64,6 +68,16 @@ class AuthViewModel extends BaseViewModel {
       
       if (credential.user != null) {
         await credential.user!.updateDisplayName(displayName);
+        
+        // Create user model and save to Firestore
+        final userModel = UserModel(
+          uid: credential.user!.uid,
+          email: email,
+          displayName: displayName,
+          createdAt: DateTime.now(),
+        );
+        
+        await FirebaseService.saveUser(userModel);
       }
       
       return true;
@@ -92,7 +106,21 @@ class AuthViewModel extends BaseViewModel {
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
+      
+      if (userCredential.user != null) {
+        // Create user model and save to Firestore
+        final userModel = UserModel(
+          uid: userCredential.user!.uid,
+          email: userCredential.user!.email,
+          displayName: userCredential.user!.displayName,
+          photoURL: userCredential.user!.photoURL,
+          createdAt: DateTime.now(),
+        );
+        
+        await FirebaseService.saveUser(userModel);
+      }
+      
       return true;
     } catch (e) {
       setError('Failed to sign in with Google');
@@ -126,6 +154,43 @@ class AuthViewModel extends BaseViewModel {
       setError(_getErrorMessage(e.code));
     } catch (e) {
       setError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<void> updateUserProfile({String? displayName, String? photoURL}) async {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      final user = _auth.currentUser;
+      if (user == null) return;
+      
+      // Update Firebase Auth profile
+      if (displayName != null) {
+        await user.updateDisplayName(displayName);
+      }
+      if (photoURL != null) {
+        await user.updatePhotoURL(photoURL);
+      }
+      
+      // Update Firestore user document
+      final updateData = <String, dynamic>{};
+      if (displayName != null) updateData['displayName'] = displayName;
+      if (photoURL != null) updateData['photoURL'] = photoURL;
+      
+      await FirebaseService.updateUser(user.uid, updateData);
+      
+      // Update local user model
+      _currentUser = _currentUser?.copyWith(
+        displayName: displayName ?? _currentUser?.displayName,
+        photoURL: photoURL ?? _currentUser?.photoURL,
+      );
+      
+      notifyListeners();
+    } catch (e) {
+      setError('Failed to update profile');
     } finally {
       setLoading(false);
     }

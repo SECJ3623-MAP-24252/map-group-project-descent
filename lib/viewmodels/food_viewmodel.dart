@@ -3,6 +3,7 @@ import '../models/food_model.dart';
 import '../models/meal_model.dart';
 import '../services/ai_food_service.dart';
 import '../services/local_food_database.dart';
+import '../services/firebase_service.dart';
 import 'base_viewmodel.dart';
 
 class FoodViewModel extends BaseViewModel {
@@ -12,42 +13,36 @@ class FoodViewModel extends BaseViewModel {
   List<MealModel> _todaysMeals = [];
   List<FoodModel> _recentFoods = [];
   double _totalCalories = 0;
+  Map<String, dynamic> _nutritionSummary = {};
 
   List<MealModel> get todaysMeals => _todaysMeals;
   List<FoodModel> get recentFoods => _recentFoods;
   double get totalCalories => _totalCalories;
+  Map<String, dynamic> get nutritionSummary => _nutritionSummary;
 
   FoodViewModel() {
-    _loadTodaysMeals();
+    _loadTodaysData();
   }
 
-  Future<void> _loadTodaysMeals() async {
+  Future<void> _loadTodaysData() async {
     try {
       setLoading(true);
-      // In a real app, this would load from Firebase/local storage
-      // For now, using sample data
-      _todaysMeals = [
-        MealModel(
-          id: '1',
-          name: 'Breakfast',
-          items: [],
-          totalCalories: 320,
-          time: '8:30 AM',
-          date: DateTime.now(),
-        ),
-        MealModel(
-          id: '2',
-          name: 'Lunch',
-          items: [],
-          totalCalories: 450,
-          time: '12:30 PM',
-          date: DateTime.now(),
-        ),
-      ];
-      _calculateTotalCalories();
+      setError(null);
+
+      // Load today's meals from Firebase
+      final today = DateTime.now();
+      _todaysMeals = await FirebaseService.getMealsByDate(today);
+      
+      // Load recent foods from Firebase
+      _recentFoods = await FirebaseService.getRecentFoods(limit: 10);
+      
+      // Calculate nutrition summary
+      _nutritionSummary = await FirebaseService.getNutritionSummary(today);
+      _totalCalories = (_nutritionSummary['calories'] ?? 0).toDouble();
+      
       notifyListeners();
     } catch (e) {
-      setError('Failed to load meals');
+      setError('Failed to load today\'s data: $e');
     } finally {
       setLoading(false);
     }
@@ -75,6 +70,10 @@ class FoodViewModel extends BaseViewModel {
           confidence: nutritionData['confidence']?.toDouble(),
         );
 
+        // Save to Firebase
+        await FirebaseService.saveFood(food);
+        await FirebaseService.saveRecentFood(food);
+        
         _addFoodToMeal(food);
         return food;
       }
@@ -125,16 +124,26 @@ class FoodViewModel extends BaseViewModel {
     }
   }
 
-  void addFoodToMeal(FoodModel food, String mealType) {
+  void addFoodToMeal(FoodModel food, String mealType) async {
     try {
+      setLoading(true);
+      setError(null);
+
       final updatedFood = food.copyWith(mealType: mealType);
+      
+      // Save food to Firebase
+      await FirebaseService.saveFood(updatedFood);
+      await FirebaseService.saveRecentFood(updatedFood);
+      
       _addFoodToMeal(updatedFood);
     } catch (e) {
-      setError('Failed to add food to meal');
+      setError('Failed to add food to meal: $e');
+    } finally {
+      setLoading(false);
     }
   }
 
-  void _addFoodToMeal(FoodModel food) {
+  void _addFoodToMeal(FoodModel food) async {
     // Find the meal for the current time
     final mealType = food.mealType;
     final existingMealIndex = _todaysMeals.indexWhere((meal) => meal.name == mealType);
@@ -148,6 +157,9 @@ class FoodViewModel extends BaseViewModel {
         totalCalories: existingMeal.totalCalories + food.calories,
       );
       _todaysMeals[existingMealIndex] = updatedMeal;
+      
+      // Save updated meal to Firebase
+      await FirebaseService.saveMeal(updatedMeal);
     } else {
       // Create new meal
       final newMeal = MealModel(
@@ -159,6 +171,9 @@ class FoodViewModel extends BaseViewModel {
         date: DateTime.now(),
       );
       _todaysMeals.add(newMeal);
+      
+      // Save new meal to Firebase
+      await FirebaseService.saveMeal(newMeal);
     }
 
     _calculateTotalCalories();
@@ -166,29 +181,69 @@ class FoodViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  void removeFoodFromMeal(String mealId, String foodId) {
-    final mealIndex = _todaysMeals.indexWhere((meal) => meal.id == mealId);
-    if (mealIndex != -1) {
-      final meal = _todaysMeals[mealIndex];
-      final foodIndex = meal.items.indexWhere((food) => food.id == foodId);
-      
-      if (foodIndex != -1) {
-        final removedFood = meal.items[foodIndex];
-        final updatedItems = List<FoodModel>.from(meal.items)..removeAt(foodIndex);
-        final updatedMeal = meal.copyWith(
-          items: updatedItems,
-          totalCalories: meal.totalCalories - removedFood.calories,
-        );
+  Future<void> removeFoodFromMeal(String mealId, String foodId) async {
+    try {
+      setLoading(true);
+      setError(null);
+
+      final mealIndex = _todaysMeals.indexWhere((meal) => meal.id == mealId);
+      if (mealIndex != -1) {
+        final meal = _todaysMeals[mealIndex];
+        final foodIndex = meal.items.indexWhere((food) => food.id == foodId);
         
-        if (updatedItems.isEmpty) {
-          _todaysMeals.removeAt(mealIndex);
-        } else {
-          _todaysMeals[mealIndex] = updatedMeal;
+        if (foodIndex != -1) {
+          final removedFood = meal.items[foodIndex];
+          final updatedItems = List<FoodModel>.from(meal.items)..removeAt(foodIndex);
+          final updatedMeal = meal.copyWith(
+            items: updatedItems,
+            totalCalories: meal.totalCalories - removedFood.calories,
+          );
+          
+          if (updatedItems.isEmpty) {
+            _todaysMeals.removeAt(mealIndex);
+            // Delete meal from Firebase
+            await FirebaseService.deleteMeal(mealId);
+          } else {
+            _todaysMeals[mealIndex] = updatedMeal;
+            // Update meal in Firebase
+            await FirebaseService.saveMeal(updatedMeal);
+          }
+          
+          // Delete food from Firebase
+          await FirebaseService.deleteFood(foodId);
+          
+          _calculateTotalCalories();
+          notifyListeners();
         }
-        
-        _calculateTotalCalories();
-        notifyListeners();
       }
+    } catch (e) {
+      setError('Failed to remove food from meal: $e');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<void> refreshData() async {
+    await _loadTodaysData();
+  }
+
+  Future<void> loadDataForDate(DateTime date) async {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load meals for specific date
+      _todaysMeals = await FirebaseService.getMealsByDate(date);
+      
+      // Load nutrition summary for specific date
+      _nutritionSummary = await FirebaseService.getNutritionSummary(date);
+      _totalCalories = (_nutritionSummary['calories'] ?? 0).toDouble();
+      
+      notifyListeners();
+    } catch (e) {
+      setError('Failed to load data for date: $e');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -216,9 +271,24 @@ class FoodViewModel extends BaseViewModel {
     return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
   }
 
-  void clearTodaysMeals() {
-    _todaysMeals.clear();
-    _totalCalories = 0;
-    notifyListeners();
+  Future<void> clearTodaysMeals() async {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Delete all meals for today from Firebase
+      for (final meal in _todaysMeals) {
+        await FirebaseService.deleteMeal(meal.id);
+      }
+      
+      _todaysMeals.clear();
+      _totalCalories = 0;
+      _nutritionSummary = {};
+      notifyListeners();
+    } catch (e) {
+      setError('Failed to clear today\'s meals: $e');
+    } finally {
+      setLoading(false);
+    }
   }
 } 

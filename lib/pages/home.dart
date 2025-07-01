@@ -575,21 +575,15 @@ class _AddMealCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: const Color(0xFFD6F36B),
-            child: Icon(icon, color: Colors.black),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(subtitle),
-          trailing: const Icon(Icons.add_circle, color: Color(0xFFD6F36B)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Color(0xFFD6F36B),
+          child: Icon(icon, color: Colors.black),
         ),
+        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle),
+        trailing: Icon(Icons.check_circle, color: Color(0xFFD6F36B)),
+        onTap: () {},
       ),
     );
   }

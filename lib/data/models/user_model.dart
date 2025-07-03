@@ -66,4 +66,4 @@ class UserModel {
       preferences: preferences ?? this.preferences,
     );
   }
-} 
+}

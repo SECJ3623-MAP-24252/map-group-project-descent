@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:provider/provider.dart';
+import '../../viewmodels/scanner_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
 
 class FoodScanResultsPage extends StatefulWidget {
   final File imageFile;
@@ -39,60 +42,53 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
   }
 
   void _saveToMealPlan() {
-    // Create meal data structure
-    final mealData = {
-      'name': _nutritionData['food_name'],
-      'type': _selectedMealType,
-      'calories': _nutritionData['nutrition']['calories'],
-      'time': TimeOfDay.now().format(context),
-      'nutrition': _nutritionData['nutrition'],
-      'ingredients': _nutritionData['ingredients'],
-      'serving_size': _nutritionData['serving_size'],
-      'source': 'ai_scan',
-      'image_path': widget.imageFile.path,
-      'timestamp': DateTime.now().toIso8601String(),
-    };
+    final scannerViewModel = context.read<ScannerViewModel>();
+    final authViewModel = context.read<AuthViewModel>();
 
-    // In a real app, you would save this to Firebase
-    // For now, just show success and navigate back
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Success!'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 48),
-                const SizedBox(height: 16),
-                Text(
-                  '${_nutritionData['food_name']} has been added to your $_selectedMealType.',
-                  textAlign: TextAlign.center,
+    if (authViewModel.currentUser != null) {
+      scannerViewModel.saveMealFromScan(
+        userId: authViewModel.currentUser!.uid,
+        nutritionData: _nutritionData,
+        mealType: _selectedMealType,
+        imageFile: widget.imageFile,
+      );
+
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: const Text('Success!'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    '${_nutritionData['food_name']} has been added to your $_selectedMealType.',
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context); // Go back to scanner
+                    Navigator.pop(context); // Go back to home
+                  },
+                  child: const Text('OK'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pushNamed(context, '/nutrition');
+                  },
+                  child: const Text('View Nutrition'),
                 ),
               ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Go back to scanner
-                  Navigator.pop(context); // Go back to home
-                },
-                child: const Text('OK'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pushNamed(
-                    context,
-                    '/nutrition',
-                  ); // Go to nutrition page
-                },
-                child: const Text('View Nutrition'),
-              ),
-            ],
-          ),
-    );
+      );
+    }
   }
 
   void _editNutrition() async {
@@ -497,7 +493,6 @@ class _NutritionItem extends StatelessWidget {
   }
 }
 
-// Keep the EditNutritionPage class from the previous implementation
 class EditNutritionPage extends StatefulWidget {
   final Map<String, dynamic> nutritionData;
 

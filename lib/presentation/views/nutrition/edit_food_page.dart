@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/nutrition_viewmodel.dart';
+import '../../viewmodels/auth_viewmodel.dart';
+import '../../../data/models/meal_model.dart';
 
 class EditFoodPage extends StatefulWidget {
-  final Map<String, dynamic>? foodData;
-
-  const EditFoodPage({Key? key, this.foodData}) : super(key: key);
+  const EditFoodPage({Key? key}) : super(key: key);
 
   @override
   State<EditFoodPage> createState() => _EditFoodPageState();
@@ -13,35 +15,45 @@ class _EditFoodPageState extends State<EditFoodPage> {
   List<_Ingredient> ingredients = [];
   late TextEditingController _foodNameController;
   late TextEditingController _caloriesController;
+  MealModel? _existingMeal;
+  bool _isEditing = false;
 
   @override
   void initState() {
     super.initState();
+    _foodNameController = TextEditingController();
+    _caloriesController = TextEditingController();
 
-    if (widget.foodData != null) {
-      // Editing existing food
-      _foodNameController = TextEditingController(
-        text: widget.foodData!['name'],
-      );
-      _caloriesController = TextEditingController(
-        text: widget.foodData!['calories'].toString(),
-      );
+    // Initialize with default ingredients
+    ingredients = [
+      _Ingredient('Avocado', '1', 'piece'),
+      _Ingredient('Eggs', '2', 'piece'),
+      _Ingredient('Spinach', '100', 'grams'),
+      _Ingredient('Lime', '1', 'piece'),
+      _Ingredient('Salad Dressing', '30', 'ml'),
+    ];
+  }
 
-      // Convert items to ingredients
-      final items = widget.foodData!['items'] as List<String>;
-      ingredients =
-          items.map((item) => _Ingredient(item, '100', 'grams')).toList();
-    } else {
-      // Creating new food
-      _foodNameController = TextEditingController();
-      _caloriesController = TextEditingController();
-      ingredients = [
-        _Ingredient('Avocado', '1', 'piece'),
-        _Ingredient('Eggs', '2', 'piece'),
-        _Ingredient('Spinach', '100', 'grams'),
-        _Ingredient('Lime', '1', 'piece'),
-        _Ingredient('Salad Dressing', '30', 'ml'),
-      ];
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Get meal from arguments if editing
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is MealModel && !_isEditing) {
+      _existingMeal = args;
+      _isEditing = true;
+      _populateFields();
+    }
+  }
+
+  void _populateFields() {
+    if (_existingMeal != null) {
+      _foodNameController.text = _existingMeal!.name;
+      _caloriesController.text = _existingMeal!.calories.toString();
+
+      // Convert meal to ingredients (simplified)
+      ingredients = [_Ingredient(_existingMeal!.name, '1', 'serving')];
     }
   }
 
@@ -82,7 +94,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
     });
   }
 
-  void _saveMeal() {
+  void _saveMeal() async {
     if (_foodNameController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -90,38 +102,56 @@ class _EditFoodPageState extends State<EditFoodPage> {
       return;
     }
 
-    // In a real app, you would save this to Firebase
-    final mealData = {
-      'name': _foodNameController.text,
-      'items': ingredients.map((ing) => ing.name).toList(),
-      'calories': int.tryParse(_caloriesController.text) ?? 0,
-      'time': TimeOfDay.now().format(context),
-      'ingredients':
-          ingredients
-              .map(
-                (ing) => {
-                  'name': ing.name,
-                  'amount': ing.amount,
-                  'unit': ing.unit,
-                },
-              )
-              .toList(),
-    };
+    final nutritionViewModel = context.read<NutritionViewModel>();
+    final authViewModel = context.read<AuthViewModel>();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${_foodNameController.text} saved successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    try {
+      final userId = authViewModel.currentUser?.uid ?? 'default_user';
 
-    Navigator.pop(context, mealData);
+      final meal = MealModel(
+        id: _existingMeal?.id ?? '',
+        userId: userId,
+        name: _foodNameController.text,
+        description: ingredients
+            .map((ing) => '${ing.amount} ${ing.unit} ${ing.name}')
+            .join(', '),
+        calories: double.tryParse(_caloriesController.text) ?? 0,
+        protein: 0, // Calculate from ingredients
+        carbs: 0, // Calculate from ingredients
+        fat: 0, // Calculate from ingredients
+        timestamp: _existingMeal?.timestamp ?? DateTime.now(),
+        mealType: _existingMeal?.mealType ?? 'Breakfast',
+      );
+
+      if (_isEditing) {
+        await nutritionViewModel.updateMeal(meal);
+      } else {
+        await nutritionViewModel.addMeal(meal);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_foodNameController.text} saved successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving meal: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.foodData != null;
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -132,7 +162,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          isEditing ? 'Edit Food' : 'Add Food',
+          _isEditing ? 'Edit Food' : 'Add Food',
           style: const TextStyle(color: Colors.black),
         ),
         centerTitle: true,
@@ -140,7 +170,6 @@ class _EditFoodPageState extends State<EditFoodPage> {
           IconButton(
             icon: const Icon(Icons.more_horiz, color: Colors.black),
             onPressed: () {
-              // Show more options
               showModalBottomSheet(
                 context: context,
                 builder:
@@ -157,7 +186,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
                               Navigator.pushNamed(context, '/scanner');
                             },
                           ),
-                          if (isEditing)
+                          if (_isEditing)
                             ListTile(
                               leading: const Icon(
                                 Icons.delete,
@@ -239,8 +268,8 @@ class _EditFoodPageState extends State<EditFoodPage> {
             ),
             const SizedBox(height: 8),
             // Table header
-            Row(
-              children: const [
+            const Row(
+              children: [
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -332,7 +361,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
                     ),
                     onPressed: _saveMeal,
                     child: Text(
-                      isEditing ? 'Update' : 'Save',
+                      _isEditing ? 'Update' : 'Save',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ),
@@ -456,20 +485,5 @@ class _IngredientDialogState extends State<_IngredientDialog> {
         ),
       ],
     );
-  }
-}
-
-// Keep the AddFoodPage class the same but update the constructor
-class AddFoodPage extends StatefulWidget {
-  const AddFoodPage({Key? key}) : super(key: key);
-
-  @override
-  State<AddFoodPage> createState() => _AddFoodPageState();
-}
-
-class _AddFoodPageState extends State<AddFoodPage> {
-  @override
-  Widget build(BuildContext context) {
-    return const EditFoodPage(); // Reuse the same widget
   }
 }

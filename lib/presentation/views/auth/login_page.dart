@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 60),
-                  
+
                   // Logo and Welcome
                   Center(
                     child: Column(
@@ -99,7 +99,9 @@ class _LoginPageState extends State<LoginPage> {
                           prefixIcon: Icons.lock_outline,
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: Colors.black54,
                             ),
                             onPressed: () {
@@ -117,7 +119,11 @@ class _LoginPageState extends State<LoginPage> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () => Navigator.pushNamed(context, '/forgot-password'),
+                            onPressed:
+                                () => Navigator.pushNamed(
+                                  context,
+                                  '/forgot-password',
+                                ),
                             child: const Text(
                               'Forgot Password?',
                               style: TextStyle(
@@ -167,7 +173,11 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ),
                               TextButton(
-                                onPressed: () => Navigator.pushNamed(context, '/register'),
+                                onPressed:
+                                    () => Navigator.pushNamed(
+                                      context,
+                                      '/register',
+                                    ),
                                 child: const Text(
                                   'Sign Up',
                                   style: TextStyle(
@@ -198,7 +208,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     authViewModel.clearError();
-    
+
     final success = await authViewModel.signIn(
       _emailController.text.trim(),
       _passwordController.text,

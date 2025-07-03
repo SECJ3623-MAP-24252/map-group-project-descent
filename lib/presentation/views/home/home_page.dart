@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authViewModel = context.read<AuthViewModel>();
       final homeViewModel = context.read<HomeViewModel>();
-      
+
       // Load meals with user ID if available
       final userId = authViewModel.currentUser?.uid ?? 'default_user';
       homeViewModel.loadTodaysMeals(userId);
@@ -74,64 +74,65 @@ class _HomePageState extends State<HomePage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Add Food',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6F36B).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.camera_alt,
-                  color: Color(0xFFFF7A4D),
+                const SizedBox(height: 20),
+                const Text(
+                  'Add Food',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-              ),
-              title: const Text('Scan Food'),
-              subtitle: const Text('Use camera to identify food'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/scanner');
-              },
-            ),
-            ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6F36B).withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Color(0xFFFF7A4D),
+                    ),
+                  ),
+                  title: const Text('Scan Food'),
+                  subtitle: const Text('Use camera to identify food'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/scanner');
+                  },
                 ),
-                child: const Icon(Icons.edit, color: Color(0xFFFF7A4D)),
-              ),
-              title: const Text('Add Manually'),
-              subtitle: const Text('Enter food details manually'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/add-food');
-              },
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit, color: Color(0xFFFF7A4D)),
+                  ),
+                  title: const Text('Add Manually'),
+                  subtitle: const Text('Enter food details manually'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/add-food');
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -143,12 +144,7 @@ class _HomePageState extends State<HomePage> {
         final bytes = base64Decode(base64String);
         return ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          child: Image.memory(
-            bytes,
-            width: 48,
-            height: 48,
-            fit: BoxFit.cover,
-          ),
+          child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
         );
       } catch (e) {
         print('Error decoding base64 image: $e');
@@ -163,22 +159,14 @@ class _HomePageState extends State<HomePage> {
           height: 48,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
-            return const Icon(
-              Icons.person,
-              color: Colors.black,
-              size: 24,
-            );
+            return const Icon(Icons.person, color: Colors.black, size: 24);
           },
         ),
       );
     }
-    
+
     // Default icon
-    return const Icon(
-      Icons.person,
-      color: Colors.black,
-      size: 24,
-    );
+    return const Icon(Icons.person, color: Colors.black, size: 24);
   }
 
   @override
@@ -190,7 +178,8 @@ class _HomePageState extends State<HomePage> {
         final totalCalories = homeViewModel.totalCalories;
 
         String getDisplayName() {
-          if (currentUser?.displayName != null && currentUser!.displayName!.isNotEmpty) {
+          if (currentUser?.displayName != null &&
+              currentUser!.displayName!.isNotEmpty) {
             return currentUser!.displayName!.split(' ').first;
           }
           return "User";
@@ -203,17 +192,24 @@ class _HomePageState extends State<HomePage> {
               children: [
                 // Top bar with avatar, welcome, and icons
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // Avatar
                       GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/profile').then((_) async {
-                          // Refresh user data when returning from profile
-                          final authViewModel = context.read<AuthViewModel>();
-                          await authViewModel.refreshUserData();
-                        }),
+                        onTap:
+                            () => Navigator.pushNamed(context, '/profile').then(
+                              (_) async {
+                                // Refresh user data when returning from profile
+                                final authViewModel =
+                                    context.read<AuthViewModel>();
+                                await authViewModel.refreshUserData();
+                              },
+                            ),
                         child: CircleAvatar(
                           radius: 24,
                           backgroundColor: const Color(0xFFD6F36B),
@@ -228,7 +224,10 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             const Text(
                               'Welcome,',
-                              style: TextStyle(fontSize: 16, color: Colors.black54),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black54,
+                              ),
                             ),
                             Text(
                               getDisplayName(),
@@ -256,7 +255,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.settings, color: Colors.black54),
-                        onPressed: () => Navigator.pushNamed(context, '/profile'),
+                        onPressed:
+                            () => Navigator.pushNamed(context, '/profile'),
                       ),
                     ],
                   ),
@@ -289,7 +289,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 // Calories progress card
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 20,
+                  ),
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -341,9 +344,21 @@ class _HomePageState extends State<HomePage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildNutrientInfo('Protein', '${homeViewModel.proteinGrams.round()}g', Colors.blue),
-                            _buildNutrientInfo('Carbs', '${homeViewModel.carbsGrams.round()}g', Colors.orange),
-                            _buildNutrientInfo('Fat', '${homeViewModel.fatGrams.round()}g', Colors.red),
+                            _buildNutrientInfo(
+                              'Protein',
+                              '${homeViewModel.proteinGrams.round()}g',
+                              Colors.blue,
+                            ),
+                            _buildNutrientInfo(
+                              'Carbs',
+                              '${homeViewModel.carbsGrams.round()}g',
+                              Colors.orange,
+                            ),
+                            _buildNutrientInfo(
+                              'Fat',
+                              '${homeViewModel.fatGrams.round()}g',
+                              Colors.red,
+                            ),
                           ],
                         ),
                       ],
@@ -355,23 +370,30 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: homeViewModel.getWeekDays().asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final day = entry.value;
-                      final isSelected = homeViewModel.selectedDate.day == day['fullDate'].day;
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          final userId = authViewModel.currentUser?.uid ?? 'default_user';
-                          homeViewModel.selectDate(day['fullDate'], userId);
-                        },
-                        child: _DayItem(
-                          day: day['day'],
-                          date: day['date'],
-                          selected: isSelected,
-                        ),
-                      );
-                    }).toList(),
+                    children:
+                        homeViewModel.getWeekDays().asMap().entries.map((
+                          entry,
+                        ) {
+                          final index = entry.key;
+                          final day = entry.value;
+                          final isSelected =
+                              homeViewModel.selectedDate.day ==
+                              day['fullDate'].day;
+
+                          return GestureDetector(
+                            onTap: () {
+                              final userId =
+                                  authViewModel.currentUser?.uid ??
+                                  'default_user';
+                              homeViewModel.selectDate(day['fullDate'], userId);
+                            },
+                            child: _DayItem(
+                              day: day['day'],
+                              date: day['date'],
+                              selected: isSelected,
+                            ),
+                          );
+                        }).toList(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -382,7 +404,10 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       const Text(
                         "Today's Meals",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       ...todaysMeals
@@ -391,7 +416,8 @@ class _HomePageState extends State<HomePage> {
                               title: meal.name,
                               items: [meal.description ?? 'No description'],
                               calories: meal.calories.toInt(),
-                              time: '${meal.timestamp.hour}:${meal.timestamp.minute.toString().padLeft(2, '0')}',
+                              time:
+                                  '${meal.timestamp.hour}:${meal.timestamp.minute.toString().padLeft(2, '0')}',
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
@@ -399,7 +425,9 @@ class _HomePageState extends State<HomePage> {
                                   arguments: meal,
                                 ).then((_) {
                                   // Refresh meals when returning from edit
-                                  final userId = authViewModel.currentUser?.uid ?? 'default_user';
+                                  final userId =
+                                      authViewModel.currentUser?.uid ??
+                                      'default_user';
                                   homeViewModel.refreshTodaysMeals(userId);
                                 });
                               },
@@ -443,8 +471,14 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.calendar_today),
                   label: 'Nutrition',
                 ),
-                BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'Add'),
-                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.add_circle),
+                  label: 'Add',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
               ],
             ),
           ),
@@ -453,7 +487,8 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Navigator.pushNamed(context, '/scanner'),
             child: const Icon(Icons.camera_alt, color: Colors.black, size: 28),
           ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
         );
       },
     );

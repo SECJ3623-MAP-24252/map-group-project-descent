@@ -8,10 +8,10 @@ import 'base_viewmodel.dart';
 
 class ProfileViewModel extends BaseViewModel {
   final UserRepository _userRepository;
-  
+
   UserModel? _userData;
   Map<String, int> _userStats = {};
-  
+
   UserModel? get userData => _userData;
   Map<String, int> get userStats => _userStats;
 
@@ -19,7 +19,7 @@ class ProfileViewModel extends BaseViewModel {
 
   Future<void> loadUserData() async {
     setState(ViewState.busy);
-    
+
     try {
       final currentUser = _userRepository.currentUser;
       if (currentUser != null) {
@@ -37,48 +37,52 @@ class ProfileViewModel extends BaseViewModel {
       final currentUser = _userRepository.currentUser;
       if (currentUser != null) {
         final firestore = FirebaseFirestore.instance;
-        
+
         // Calculate days active (days with at least one meal)
-        final mealsQuery = await firestore
-            .collection('meals')
-            .where('userId', isEqualTo: currentUser.uid)
-            .get();
-        
+        final mealsQuery =
+            await firestore
+                .collection('meals')
+                .where('userId', isEqualTo: currentUser.uid)
+                .get();
+
         final uniqueDays = <String>{};
         int foodsScanned = 0;
-        
+
         for (final doc in mealsQuery.docs) {
           final timestamp = (doc.data()['timestamp'] as Timestamp).toDate();
-          final dayKey = '${timestamp.year}-${timestamp.month}-${timestamp.day}';
+          final dayKey =
+              '${timestamp.year}-${timestamp.month}-${timestamp.day}';
           uniqueDays.add(dayKey);
-          
+
           // Count foods that were scanned (have imageUrl or source indicates scanning)
           final data = doc.data();
-          if (data['imageUrl'] != null || 
-              (data['description'] != null && data['description'].toString().contains('Scanned'))) {
+          if (data['imageUrl'] != null ||
+              (data['description'] != null &&
+                  data['description'].toString().contains('Scanned'))) {
             foodsScanned++;
           }
         }
-        
+
         _userStats = {
           'daysActive': uniqueDays.length,
           'foodsScanned': foodsScanned,
         };
-        
+
         notifyListeners();
       }
     } catch (e) {
       print('Error loading user stats: $e');
-      _userStats = {
-        'daysActive': 0,
-        'foodsScanned': 0,
-      };
+      _userStats = {'daysActive': 0, 'foodsScanned': 0};
     }
   }
 
-  Future<void> updateProfile({String? displayName, String? photoURL, File? imageFile}) async {
+  Future<void> updateProfile({
+    String? displayName,
+    String? photoURL,
+    File? imageFile,
+  }) async {
     setState(ViewState.busy);
-    
+
     try {
       final currentUser = _userRepository.currentUser;
       if (currentUser != null) {
@@ -87,7 +91,7 @@ class ProfileViewModel extends BaseViewModel {
           displayName: displayName,
           imageFile: imageFile,
         );
-        
+
         // Reload user data to get the updated profile
         await loadUserData();
       }
@@ -99,7 +103,7 @@ class ProfileViewModel extends BaseViewModel {
 
   Future<void> signOut() async {
     setState(ViewState.busy);
-    
+
     try {
       await _userRepository.signOut();
       _userData = null;

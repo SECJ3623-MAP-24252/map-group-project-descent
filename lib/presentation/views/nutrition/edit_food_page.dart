@@ -12,9 +12,15 @@ import '../../../data/repositories/ai_food_repository.dart';
 import '../../../data/services/api_config.dart';
 
 class EditFoodPage extends StatefulWidget {
-  final MealModel meal;
-  
-  const EditFoodPage({Key? key, required this.meal}) : super(key: key);
+  final MealModel? meal; // For existing meals
+  final Map<String, dynamic>? initialScanData; // For scanned, unsaved meals
+
+  const EditFoodPage({Key? key, this.meal, this.initialScanData})
+    : assert(
+        meal != null || initialScanData != null,
+        'Either meal or initialScanData must be provided',
+      ),
+      super(key: key);
 
   @override
   State<EditFoodPage> createState() => _EditFoodPageState();
@@ -27,22 +33,79 @@ class _EditFoodPageState extends State<EditFoodPage> {
   late TextEditingController _proteinController;
   late TextEditingController _carbsController;
   late TextEditingController _fatController;
-  late MealModel _meal;
+  late TextEditingController
+  _descriptionController; // New controller for description
+  late MealModel
+  _meal; // This will hold the current state of the meal being edited
   bool _isCalculating = false;
   bool _isLoading = false;
-  bool _hasChanges = false; // Track if ingredients have changed
+  bool _hasChanges = false; // Track if ingredients or description have changed
 
   @override
   void initState() {
     super.initState();
-    _meal = widget.meal;
     _foodNameController = TextEditingController();
     _caloriesController = TextEditingController();
     _proteinController = TextEditingController();
     _carbsController = TextEditingController();
     _fatController = TextEditingController();
-    
-    _loadMealData();
+    _descriptionController =
+        TextEditingController(); // Initialize new controller
+
+    if (widget.initialScanData != null) {
+      print('Initializing EditFoodPage with scanned data.');
+      _meal = _createMealModelFromScanData(widget.initialScanData!);
+      _populateFields();
+      _hasChanges =
+          true; // Mark as changed to trigger recalculation on save if needed
+    } else if (widget.meal != null) {
+      print('Initializing EditFoodPage with existing meal data.');
+      _meal = widget.meal!;
+      _loadMealData(); // Load fresh data for existing meal
+    } else {
+      // This case should ideally not be reached due to the assert, but as a fallback
+      print('Error: Neither meal nor initialScanData provided. Using default.');
+      _meal = MealModel(
+        id: '',
+        userId: '',
+        name: 'New Meal',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        timestamp: DateTime.now(),
+        mealType: 'Snack',
+      );
+      _populateFields();
+    }
+  }
+
+  // Helper to create a temporary MealModel from scan data
+  MealModel _createMealModelFromScanData(Map<String, dynamic> scanData) {
+    final nutrition = scanData['nutrition'] as Map<String, dynamic>;
+    final ingredientsData = scanData['ingredients'] as List<dynamic>;
+
+    final List<IngredientModel> ingredientModels =
+        ingredientsData.map((ing) {
+          return IngredientModel.fromMap(ing as Map<String, dynamic>);
+        }).toList();
+
+    return MealModel(
+      id: '', // No ID yet, as it's not saved to DB
+      userId: '', // Will be set on save
+      name: scanData['food_name'] ?? 'Unknown Meal',
+      description: scanData['description'] ?? 'No description available.',
+      calories: (nutrition['calories'] ?? 0).toDouble(),
+      protein: (nutrition['protein'] ?? 0).toDouble(),
+      carbs: (nutrition['carbs'] ?? 0).toDouble(),
+      fat: (nutrition['fat'] ?? 0).toDouble(),
+      timestamp: DateTime.now(),
+      imageUrl: scanData['imageUrl'], // If image is passed
+      mealType:
+          scanData['mealType'] ?? 'Snack', // Default or passed from scan page
+      ingredients: ingredientModels,
+      scanSource: scanData['source'] ?? 'ai_scan',
+    );
   }
 
   Future<void> _loadMealData() async {
@@ -54,14 +117,16 @@ class _EditFoodPageState extends State<EditFoodPage> {
       // Load fresh meal data from database
       final mealRepository = getIt<MealRepository>();
       final freshMeal = await mealRepository.getMealById(_meal.id);
-      
+
       if (freshMeal != null) {
         _meal = freshMeal;
         print('Loaded fresh meal data: ${_meal.id} - ${_meal.name}');
       } else {
-        print('Could not load fresh meal data, using existing meal');
+        print(
+          'Could not load fresh meal data, using existing meal from arguments',
+        );
       }
-      
+
       _populateFields();
     } catch (e) {
       print('Error loading meal data: $e');
@@ -79,16 +144,22 @@ class _EditFoodPageState extends State<EditFoodPage> {
     _proteinController.text = _meal.protein.round().toString();
     _carbsController.text = _meal.carbs.round().toString();
     _fatController.text = _meal.fat.round().toString();
-    
+    _descriptionController.text =
+        _meal.description ?? ''; // Populate description
+
     // Clear existing ingredients
     ingredients.clear();
-    
+
     // Load from stored ingredients (from scanned meals)
     if (_meal.ingredients != null && _meal.ingredients!.isNotEmpty) {
-      print('Loading ingredients from stored ingredients: ${_meal.ingredients!.length}');
+      print(
+        'Loading ingredients from stored ingredients: ${_meal.ingredients!.length}',
+      );
       for (final ingredient in _meal.ingredients!) {
         // Parse weight to get amount and unit
-        final weightMatch = RegExp(r'^(\d+(?:\.\d+)?)\s*(\w+)$').firstMatch(ingredient.weight);
+        final weightMatch = RegExp(
+          r'^(\d+(?:\.\d+)?)\s*(\w+)$',
+        ).firstMatch(ingredient.weight);
         if (weightMatch != null) {
           final amount = weightMatch.group(1)!;
           final unit = weightMatch.group(2)!;
@@ -103,14 +174,16 @@ class _EditFoodPageState extends State<EditFoodPage> {
     }
     // Fallback: Parse ingredients from description (for manually added meals)
     else if (_meal.description != null && _meal.description!.isNotEmpty) {
-      print('Parsing description: ${_meal.description}');
-      
+      print('Parsing description for ingredients: ${_meal.description}');
+
       final parts = _meal.description!.split(', ');
       for (final part in parts) {
         final trimmedPart = part.trim();
         if (trimmedPart.isNotEmpty) {
           // Try to parse "amount unit name" format
-          final match = RegExp(r'^(\d+(?:\.\d+)?)\s*(\w+)\s+(.+)$').firstMatch(trimmedPart);
+          final match = RegExp(
+            r'^(\d+(?:\.\d+)?)\s*(\w+)\s+(.+)$',
+          ).firstMatch(trimmedPart);
           if (match != null) {
             final amount = match.group(1)!;
             final unit = match.group(2)!;
@@ -127,14 +200,14 @@ class _EditFoodPageState extends State<EditFoodPage> {
         }
       }
     }
-    
+
     // If no ingredients found, create one from the meal name
     if (ingredients.isEmpty) {
       final ing = _Ingredient(_meal.name, '1', 'serving');
       ingredients.add(ing);
       print('Created default ingredient from meal name: ${_meal.name}');
     }
-    
+
     print('Total ingredients loaded: ${ingredients.length}');
   }
 
@@ -145,6 +218,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
     _proteinController.dispose();
     _carbsController.dispose();
     _fatController.dispose();
+    _descriptionController.dispose(); // Dispose new controller
     super.dispose();
   }
 
@@ -171,10 +245,12 @@ class _EditFoodPageState extends State<EditFoodPage> {
         ingredients.add(result);
         _hasChanges = true;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ingredient added. Click "Update Meal" to recalculate nutrition.'),
+          content: Text(
+            'Ingredient added. Click "Update Meal" to recalculate nutrition.',
+          ),
           backgroundColor: Colors.blue,
           duration: Duration(seconds: 2),
         ),
@@ -187,10 +263,12 @@ class _EditFoodPageState extends State<EditFoodPage> {
       ingredients.removeAt(index);
       _hasChanges = true;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Ingredient removed. Click "Update Meal" to recalculate nutrition.'),
+        content: Text(
+          'Ingredient removed. Click "Update Meal" to recalculate nutrition.',
+        ),
         backgroundColor: Colors.orange,
         duration: Duration(seconds: 2),
       ),
@@ -199,16 +277,16 @@ class _EditFoodPageState extends State<EditFoodPage> {
 
   void _updateMeal() async {
     if (_foodNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a food name')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a food name')));
       return;
     }
 
     final nutritionViewModel = context.read<NutritionViewModel>();
     final authViewModel = context.read<AuthViewModel>();
     final homeViewModel = context.read<HomeViewModel>();
-    
+
     try {
       setState(() {
         _isCalculating = true;
@@ -221,43 +299,66 @@ class _EditFoodPageState extends State<EditFoodPage> {
       print('Number of ingredients: ${ingredients.length}');
 
       // If there are changes to ingredients, recalculate nutrition with ALL current ingredients
+      // This will update _caloriesController, _proteinController, etc.
       if (_hasChanges && ingredients.isNotEmpty) {
-        print('Recalculating nutrition due to ingredient changes...');
+        print(
+          'Recalculating nutrition due to ingredient/description changes...',
+        );
         await _recalculateNutritionFromAPI();
       }
 
       final userId = authViewModel.currentUser?.uid ?? 'default_user';
-      
+
       // Convert ingredients to IngredientModel list
-      final ingredientModels = ingredients.map((ing) {
-        return IngredientModel(
-          name: ing.name,
-          weight: '${ing.amount}${ing.unit}',
-          calories: 0, // Could calculate this if needed
-        );
-      }).toList();
-      
+      final ingredientModels =
+          ingredients.map((ing) {
+            return IngredientModel(
+              name: ing.name,
+              weight: '${ing.amount}${ing.unit}',
+              calories: 0, // Could calculate this if needed
+            );
+          }).toList();
+
       print('Creating updated meal object...');
       final updatedMeal = _meal.copyWith(
         name: _foodNameController.text,
-        description: ingredients.map((ing) => '${ing.amount} ${ing.unit} ${ing.name}').join(', '),
+        description:
+            _descriptionController.text, // Use description from controller
         calories: double.tryParse(_caloriesController.text) ?? 0,
         protein: double.tryParse(_proteinController.text) ?? 0,
         carbs: double.tryParse(_carbsController.text) ?? 0,
         fat: double.tryParse(_fatController.text) ?? 0,
         ingredients: ingredientModels,
+        // If it's a new meal from scan, set userId and scanSource
+        userId: _meal.id.isEmpty ? userId : _meal.userId,
+        scanSource:
+            _meal.id.isEmpty
+                ? (_meal.scanSource ?? 'manual')
+                : _meal.scanSource,
+        mealType:
+            _meal.id.isEmpty ? (_meal.mealType ?? 'Snack') : _meal.mealType,
       );
 
       print('Updated meal details:');
       print('- ID: ${updatedMeal.id}');
       print('- Name: ${updatedMeal.name}');
+      print('- Description: ${updatedMeal.description}');
       print('- Calories: ${updatedMeal.calories}');
       print('- Ingredients: ${updatedMeal.ingredients?.length ?? 0}');
 
-      // Update meal in database
-      print('Updating meal in database...');
-      await nutritionViewModel.updateMeal(updatedMeal);
-      print('Database update completed successfully');
+      // If it's a new meal (from scan), add it. Otherwise, update.
+      if (_meal.id.isEmpty) {
+        print('Adding new meal to database...');
+        final newMealId = await nutritionViewModel.addMeal(updatedMeal);
+        _meal = updatedMeal.copyWith(
+          id: newMealId,
+        ); // Update local meal with new ID
+        print('New meal added with ID: $newMealId');
+      } else {
+        print('Updating existing meal in database...');
+        await nutritionViewModel.updateMeal(updatedMeal);
+        print('Database update completed successfully');
+      }
 
       // Update local meal reference
       _meal = updatedMeal;
@@ -276,10 +377,13 @@ class _EditFoodPageState extends State<EditFoodPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // Small delay to ensure user sees the success message
         await Future.delayed(const Duration(milliseconds: 500));
-        Navigator.pop(context, true); // Return true to indicate successful update
+        Navigator.pop(
+          context,
+          true,
+        ); // Return true to indicate successful update
       }
     } catch (e) {
       print('Error updating meal: $e');
@@ -303,40 +407,44 @@ class _EditFoodPageState extends State<EditFoodPage> {
   void _deleteMeal() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Meal'),
-        content: Text('Are you sure you want to delete "${_meal.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Meal'),
+            content: Text('Are you sure you want to delete "${_meal.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true) {
       try {
         print('Deleting meal: ${_meal.id} - ${_meal.name}');
-        
+
         final nutritionViewModel = context.read<NutritionViewModel>();
         final authViewModel = context.read<AuthViewModel>();
         final homeViewModel = context.read<HomeViewModel>();
         final userId = authViewModel.currentUser?.uid ?? 'default_user';
-        
+
         await nutritionViewModel.deleteMeal(_meal.id, userId);
         print('Meal deleted successfully from database');
-        
+
         // Refresh both home page and nutrition page meals
         await homeViewModel.refreshTodaysMeals(userId);
         await nutritionViewModel.loadMealsForSelectedDay(userId);
         print('UI refreshed after deletion');
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -344,11 +452,11 @@ class _EditFoodPageState extends State<EditFoodPage> {
               backgroundColor: Colors.green,
             ),
           );
-          
-          // Navigate to home page instead of just popping
+
+          // Navigate to daily nutrition page after deletion
           Navigator.pushNamedAndRemoveUntil(
-            context, 
-            '/home', 
+            context,
+            '/nutrition', // Redirect to daily nutrition page
             (route) => false,
           );
         }
@@ -387,10 +495,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.memory(
-              bytes,
-              fit: BoxFit.cover,
-            ),
+            child: Image.memory(bytes, fit: BoxFit.cover),
           ),
         );
       } catch (e) {
@@ -412,7 +517,10 @@ class _EditFoodPageState extends State<EditFoodPage> {
             icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text('Loading...', style: TextStyle(color: Colors.black)),
+          title: const Text(
+            'Loading...',
+            style: TextStyle(color: Colors.black),
+          ),
           centerTitle: true,
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -428,15 +536,15 @@ class _EditFoodPageState extends State<EditFoodPage> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Edit Food',
-          style: TextStyle(color: Colors.black),
-        ),
+        title: const Text('Edit Food', style: TextStyle(color: Colors.black)),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: _deleteMeal,
+            onPressed:
+                _meal.id.isNotEmpty
+                    ? _deleteMeal
+                    : null, // Only allow delete for saved meals
           ),
         ],
       ),
@@ -446,10 +554,10 @@ class _EditFoodPageState extends State<EditFoodPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
-            
+
             // Show meal image if available
             _buildMealImage(),
-            
+
             TextField(
               controller: _foodNameController,
               decoration: const InputDecoration(
@@ -459,7 +567,23 @@ class _EditFoodPageState extends State<EditFoodPage> {
               ),
             ),
             const SizedBox(height: 16),
-            
+
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.description),
+              ),
+              maxLines: 3,
+              minLines: 1,
+              onChanged:
+                  (_) => setState(
+                    () => _hasChanges = true,
+                  ), // Mark changes if description is edited
+            ),
+            const SizedBox(height: 16),
+
             Row(
               children: [
                 Expanded(
@@ -471,6 +595,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
                       border: OutlineInputBorder(),
                       suffixText: 'cal',
                     ),
+                    readOnly: true, // Make read-only
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -483,6 +608,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
                       border: OutlineInputBorder(),
                       suffixText: 'g',
                     ),
+                    readOnly: true, // Make read-only
                   ),
                 ),
               ],
@@ -499,6 +625,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
                       border: OutlineInputBorder(),
                       suffixText: 'g',
                     ),
+                    readOnly: true, // Make read-only
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -511,11 +638,12 @@ class _EditFoodPageState extends State<EditFoodPage> {
                       border: OutlineInputBorder(),
                       suffixText: 'g',
                     ),
+                    readOnly: true, // Make read-only
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
             Row(
               children: [
@@ -575,68 +703,71 @@ class _EditFoodPageState extends State<EditFoodPage> {
               ],
             ),
             const Divider(),
-            
+
             // Ingredients List with proper constraints
             ConstrainedBox(
               constraints: BoxConstraints(
                 minHeight: 100,
-                maxHeight: MediaQuery.of(context).size.height * 0.3, // Max 30% of screen height
+                maxHeight:
+                    MediaQuery.of(context).size.height *
+                    0.3, // Max 30% of screen height
               ),
-              child: ingredients.isEmpty
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Text(
-                          'No ingredients found.\nTap "Add Ingredient" to add some.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.black54),
+              child:
+                  ingredients.isEmpty
+                      ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                            'No ingredients found.\nTap "Add Ingredient" to add some.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.black54),
+                          ),
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      shrinkWrap: true,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: ingredients.length,
-                      separatorBuilder: (_, __) => const Divider(),
-                      itemBuilder: (context, index) {
-                        final ing = ingredients[index];
-                        return Row(
-                          children: [
-                            Expanded(flex: 2, child: Text('• ${ing.name}')),
-                            Expanded(
-                              flex: 1,
-                              child: Row(
-                                children: [
-                                  Text(ing.amount),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    ing.unit,
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                      fontSize: 13,
+                      )
+                      : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const BouncingScrollPhysics(),
+                        itemCount: ingredients.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final ing = ingredients[index];
+                          return Row(
+                            children: [
+                              Expanded(flex: 2, child: Text('• ${ing.name}')),
+                              Expanded(
+                                flex: 1,
+                                child: Row(
+                                  children: [
+                                    Text(ing.amount),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      ing.unit,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 18),
-                              onPressed: () => _editIngredient(index),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete,
-                                size: 18,
-                                color: Colors.red,
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18),
+                                onPressed: () => _editIngredient(index),
                               ),
-                              onPressed: () => _removeIngredient(index),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  size: 18,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _removeIngredient(index),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
             ),
-            
+
             const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
@@ -667,19 +798,20 @@ class _EditFoodPageState extends State<EditFoodPage> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: _isCalculating ? null : _updateMeal,
-                    child: _isCalculating
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                    child:
+                        _isCalculating
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                            : const Text(
+                              'Update Meal',
+                              style: TextStyle(fontSize: 16),
                             ),
-                          )
-                        : const Text(
-                            'Update Meal',
-                            style: TextStyle(fontSize: 16),
-                          ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -710,10 +842,10 @@ class _EditFoodPageState extends State<EditFoodPage> {
 
   int _getTotalWeight() {
     double totalWeight = 0.0;
-    
+
     for (final ing in ingredients) {
       final amount = double.tryParse(ing.amount) ?? 0;
-      
+
       // Convert different units to grams
       switch (ing.unit.toLowerCase()) {
         case 'grams':
@@ -747,14 +879,28 @@ class _EditFoodPageState extends State<EditFoodPage> {
           break;
       }
     }
-    
+
     return totalWeight.round();
   }
 
   // Recalculate nutrition using ALL current ingredients
   Future<void> _recalculateNutritionFromAPI() async {
-    if (ingredients.isEmpty) return;
-    
+    if (ingredients.isEmpty) {
+      setState(() {
+        _caloriesController.text = '0';
+        _proteinController.text = '0';
+        _carbsController.text = '0';
+        _fatController.text = '0';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No ingredients to calculate nutrition.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     try {
       // Format ALL current ingredients for API call
       final ingredientsString = ingredients
@@ -764,7 +910,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
       print('Recalculating nutrition for ALL ingredients: $ingredientsString');
 
       final nutritionData = await _getNutritionFromAPI(ingredientsString);
-      
+
       if (nutritionData != null) {
         setState(() {
           _caloriesController.text = nutritionData['calories'].toString();
@@ -773,14 +919,29 @@ class _EditFoodPageState extends State<EditFoodPage> {
           _fatController.text = nutritionData['fat'].toString();
         });
 
-        print('Nutrition recalculated: ${nutritionData['calories']} cal, ${nutritionData['protein']}g protein');
+        print(
+          'Nutrition recalculated: ${nutritionData['calories']} cal, ${nutritionData['protein']}g protein',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nutrition values recalculated successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not recalculate nutrition data from API.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
       }
     } catch (e) {
       print('Error recalculating nutrition: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not recalculate nutrition data'),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          content: Text('Error recalculating nutrition: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     } finally {
@@ -790,7 +951,9 @@ class _EditFoodPageState extends State<EditFoodPage> {
     }
   }
 
-  Future<Map<String, dynamic>?> _getNutritionFromAPI(String ingredientsString) async {
+  Future<Map<String, dynamic>?> _getNutritionFromAPI(
+    String ingredientsString,
+  ) async {
     try {
       // Use CalorieNinjas API directly
       final apiKey = APIConfig.getApiKey('calorieninjas');
@@ -800,7 +963,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
       }
 
       final uri = Uri.parse('https://api.calorieninjas.com/v1/nutrition');
-      
+
       final response = await http.get(
         uri.replace(queryParameters: {'query': ingredientsString}),
         headers: {'X-Api-Key': apiKey},
@@ -812,7 +975,7 @@ class _EditFoodPageState extends State<EditFoodPage> {
         final data = jsonDecode(response.body);
         if (data != null && data['items'] != null && data['items'] is List) {
           final items = data['items'] as List;
-          
+
           if (items.isNotEmpty) {
             double totalCalories = 0.0;
             double totalProtein = 0.0;
@@ -865,7 +1028,14 @@ class _IngredientDialogState extends State<_IngredientDialog> {
   late TextEditingController nameController;
   late TextEditingController amountController;
   String unit = 'piece';
-  final List<String> units = ['piece', 'grams', 'ml', 'cup', 'tablespoon'];
+  final List<String> units = [
+    'piece',
+    'grams',
+    'ml',
+    'cup',
+    'tablespoon',
+    'serving',
+  ]; // Added 'serving'
 
   @override
   void initState() {
@@ -900,9 +1070,10 @@ class _IngredientDialogState extends State<_IngredientDialog> {
           DropdownButtonFormField<String>(
             value: unit,
             decoration: const InputDecoration(labelText: 'Unit'),
-            items: units
-                .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                .toList(),
+            items:
+                units
+                    .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                    .toList(),
             onChanged: (val) => setState(() => unit = val!),
           ),
         ],

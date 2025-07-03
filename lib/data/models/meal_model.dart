@@ -95,14 +95,17 @@ class MealModel {
   // Create MealModel from Firestore document
   factory MealModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    
+
     List<IngredientModel>? ingredientsList;
     if (data['ingredients'] != null) {
-      ingredientsList = (data['ingredients'] as List)
-          .map((ing) => IngredientModel.fromMap(ing as Map<String, dynamic>))
-          .toList();
+      ingredientsList =
+          (data['ingredients'] as List)
+              .map(
+                (ing) => IngredientModel.fromMap(ing as Map<String, dynamic>),
+              )
+              .toList();
     }
-    
+
     return MealModel(
       id: doc.id, // Use document ID
       userId: data['userId'] ?? '',

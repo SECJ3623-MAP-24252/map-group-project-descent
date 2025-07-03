@@ -122,7 +122,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           prefixIcon: Icons.lock_outline,
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: Colors.black54,
                             ),
                             onPressed: () {
@@ -143,12 +145,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           prefixIcon: Icons.lock_outline,
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: Colors.black54,
                             ),
                             onPressed: () {
                               setState(() {
-                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
                               });
                             },
                           ),
@@ -281,7 +286,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future<void> _handleRegister(AuthViewModel authViewModel) async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -293,7 +298,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     authViewModel.clearError();
-    
+
     final success = await authViewModel.register(
       _emailController.text.trim(),
       _passwordController.text,

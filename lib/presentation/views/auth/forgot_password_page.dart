@@ -52,15 +52,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: _emailSent
-                                ? Colors.green.withOpacity(0.1)
-                                : const Color(0xFFD6F36B).withOpacity(0.2),
+                            color:
+                                _emailSent
+                                    ? Colors.green.withOpacity(0.1)
+                                    : const Color(0xFFD6F36B).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
-                            _emailSent ? Icons.mark_email_read : Icons.lock_reset,
+                            _emailSent
+                                ? Icons.mark_email_read
+                                : Icons.lock_reset,
                             size: 40,
-                            color: _emailSent ? Colors.green : const Color(0xFFFF7A4D),
+                            color:
+                                _emailSent
+                                    ? Colors.green
+                                    : const Color(0xFFFF7A4D),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -110,7 +116,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           CustomButton(
                             text: 'Send Reset Link',
                             isLoading: authViewModel.isBusy,
-                            onPressed: () => _handleResetPassword(authViewModel),
+                            onPressed:
+                                () => _handleResetPassword(authViewModel),
                           ),
 
                           if (authViewModel.hasError) ...[
@@ -137,7 +144,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.3),
+                        ),
                       ),
                       child: Column(
                         children: [
@@ -223,8 +232,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     if (!_formKey.currentState!.validate()) return;
 
     authViewModel.clearError();
-    
-    final success = await authViewModel.resetPassword(_emailController.text.trim());
+
+    final success = await authViewModel.resetPassword(
+      _emailController.text.trim(),
+    );
 
     if (success) {
       setState(() {

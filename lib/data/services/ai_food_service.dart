@@ -8,22 +8,43 @@ class AIFoodService {
   /// Main method to analyze food image using Gemini + CalorieNinjas
   static Future<Map<String, dynamic>> analyzeFoodImage(File imageFile) async {
     try {
-      // Step 1: Use Gemini to analyze the image and extract ingredients
-      final ingredientsString = await _analyzeImageWithGemini(imageFile);
+      // Step 1: Use Gemini to analyze the image and extract meal name, description, and ingredients
+      final geminiResponse = await _analyzeImageWithGemini(imageFile);
 
-      if (ingredientsString != null && ingredientsString.isNotEmpty) {
-        print('Successfully extracted ingredients: $ingredientsString');
+      if (geminiResponse != null &&
+          geminiResponse['ingredientsString'] != null &&
+          geminiResponse['ingredientsString'] != null &&
+          geminiResponse['ingredientsString']!.isNotEmpty) {
+        print('Successfully extracted from Gemini:');
+        print('  Name: ${geminiResponse['mealName']}');
+        print('  Description: ${geminiResponse['mealDescription']}');
+        print('  Ingredients: ${geminiResponse['ingredientsString']}');
 
         // Step 2: Use CalorieNinjas to get nutrition data for the ingredients
         final nutritionData = await _getNutritionFromCalorieNinjas(
-          ingredientsString,
+          geminiResponse['ingredientsString']!,
         );
 
         if (nutritionData != null) {
-          return nutritionData;
+          // Combine Gemini's name and description with CalorieNinjas' nutrition and ingredients
+          return {
+            'food_name': geminiResponse['mealName'] ?? 'Unknown Meal',
+            'description':
+                geminiResponse['mealDescription'] ??
+                'No description available.',
+            'confidence': nutritionData['confidence'],
+            'source': nutritionData['source'],
+            'nutrition': nutritionData['nutrition'],
+            'ingredients': nutritionData['ingredients'],
+            'serving_size': nutritionData['serving_size'],
+            'detailed_breakdown': nutritionData['detailed_breakdown'],
+            'original_query': nutritionData['original_query'],
+          };
         }
       } else {
-        print('Failed to extract ingredients from image');
+        print(
+          'Failed to extract sufficient information from image using Gemini.',
+        );
       }
 
       // If AI services fail, return a default response
@@ -35,7 +56,9 @@ class AIFoodService {
   }
 
   /// Analyze food image using Gemini 1.5 Flash API
-  static Future<String?> _analyzeImageWithGemini(File imageFile) async {
+  static Future<Map<String, String>?> _analyzeImageWithGemini(
+    File imageFile,
+  ) async {
     try {
       final apiKey = APIConfig.getApiKey('gemini');
       if (apiKey == null || apiKey.isEmpty) {
@@ -52,14 +75,27 @@ class AIFoodService {
         'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=$apiKey',
       );
 
-      final prompt =
-          '''Analyze the provided image for individual food items. If a composite dish (e.g., cheeseburger, pizza slice) is identified, break it down into its distinct, base ingredients. For each identified food item or base ingredient, estimate its weight in grams (g). Convert any liquid volume measurements (e.g., ml, tablespoons), piece measurements, or unspecified units to grams. Provide its specific name. List all identified items and their estimated weights in a single, comma-separated string, formatted as 'WEIGHTg INGREDIENT_NAME', with no additional text, descriptions, or calorie counts. Do not include any ambiguous or vague terms.
+      final prompt = '''Analyze the provided image of food.
+          
+          1. **Identify the main meal/dish name.** If it's a common dish (e.g., "Cheeseburger", "Pizza Slice", "Chicken Salad"), provide that name. If it's a collection of items or not clearly a single dish, name it "Mixed Food Items".
+          2. **Provide a brief, concise description of the meal/dish.** Describe its appearance and main components.
+          3. **List all individual food items or base ingredients.** For each, estimate its weight in grams (g). Convert any liquid volume measurements (e.g., ml, tablespoons), piece measurements, or unspecified units to grams. Provide its specific name. List all identified items and their estimated weights in a single, comma-separated string, formatted as 'WEIGHTg INGREDIENT_NAME', with no additional text, descriptions, or calorie counts. Do not include any ambiguous or vague terms.
 
-Example Input:
-(Image of a hamburger: bun, patty, cheese, lettuce, tomato, ketchup, mayonnaise)
+          Return the response as a JSON object with the following keys:
+          "mealName": "...",
+          "mealDescription": "...",
+          "ingredientsList": "..."
 
-Expected API Output Format:
-70g Bun, 90g Beef Patty, 18g Processed Cheese, 8g Iceberg Lettuce, 20g Tomato, 15g Ketchup, 5g Mayonnaise''';
+          Example Input:
+          (Image of a hamburger: bun, patty, cheese, lettuce, tomato, ketchup, mayonnaise)
+
+          Expected API Output Format:
+          {
+            "mealName": "Cheeseburger",
+            "mealDescription": "A classic cheeseburger with a grilled beef patty, melted cheese, fresh lettuce, sliced tomato, and a bun.",
+            "ingredientsList": "70g Bun, 90g Beef Patty, 18g Processed Cheese, 8g Iceberg Lettuce, 20g Tomato, 15g Ketchup, 5g Mayonnaise"
+          }
+          ''';
 
       final requestBody = {
         "contents": [
@@ -109,14 +145,50 @@ Expected API Output Format:
             if (content['parts'] != null &&
                 content['parts'] is List &&
                 content['parts'].isNotEmpty) {
-              final parts = content['parts'] as List;
-              final firstPart = parts[0];
+              final firstPart = content['parts'][0];
 
               if (firstPart is Map<String, dynamic> &&
                   firstPart['text'] != null) {
-                final ingredientsText = firstPart['text'].toString().trim();
-                print('Gemini extracted ingredients: $ingredientsText');
-                return ingredientsText;
+                final geminiText = firstPart['text'].toString().trim();
+                print('Raw Gemini text response: $geminiText');
+
+                try {
+                  final parsedJson = jsonDecode(geminiText);
+                  if (parsedJson is Map<String, dynamic>) {
+                    return {
+                      'mealName':
+                          parsedJson['mealName']?.toString() ?? 'Unknown Meal',
+                      'mealDescription':
+                          parsedJson['mealDescription']?.toString() ??
+                          'No description available.',
+                      'ingredientsString':
+                          parsedJson['ingredientsList']?.toString() ?? '',
+                    };
+                  }
+                } catch (e) {
+                  print('Error parsing Gemini JSON: $e');
+                  // Fallback if Gemini doesn't return perfect JSON
+                  // Try to extract ingredients string heuristically
+                  final ingredientsMatch = RegExp(
+                    r'"ingredientsList":\s*"([^"]*)"',
+                  ).firstMatch(geminiText);
+                  final mealNameMatch = RegExp(
+                    r'"mealName":\s*"([^"]*)"',
+                  ).firstMatch(geminiText);
+                  final mealDescriptionMatch = RegExp(
+                    r'"mealDescription":\s*"([^"]*)"',
+                  ).firstMatch(geminiText);
+
+                  return {
+                    'mealName': mealNameMatch?.group(1) ?? 'Unknown Meal',
+                    'mealDescription':
+                        mealDescriptionMatch?.group(1) ??
+                        'No description available.',
+                    'ingredientsString':
+                        ingredientsMatch?.group(1) ??
+                        geminiText, // Use full text as fallback for ingredients
+                  };
+                }
               }
             }
           }
@@ -143,7 +215,9 @@ Expected API Output Format:
 
       final uri = Uri.parse('https://api.calorieninjas.com/v1/nutrition');
 
-      print('Sending request to CalorieNinjas API with query: $ingredientsString');
+      print(
+        'Sending request to CalorieNinjas API with query: $ingredientsString',
+      );
       final response = await http.get(
         uri.replace(queryParameters: {'query': ingredientsString}),
         headers: {'X-Api-Key': apiKey},
@@ -154,7 +228,9 @@ Expected API Output Format:
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('CalorieNinjas full response received with ${data['items']?.length ?? 0} items');
+        print(
+          'CalorieNinjas full response received with ${data['items']?.length ?? 0} items',
+        );
 
         if (data != null &&
             data is Map<String, dynamic> &&
@@ -169,7 +245,9 @@ Expected API Output Format:
           }
         }
       } else {
-        print('CalorieNinjas API error: ${response.statusCode} - ${response.body}');
+        print(
+          'CalorieNinjas API error: ${response.statusCode} - ${response.body}',
+        );
       }
     } catch (e) {
       print('Error in _getNutritionFromCalorieNinjas: $e');
@@ -194,23 +272,10 @@ Expected API Output Format:
     double totalWeight = 0.0;
 
     List<Map<String, dynamic>> ingredients = [];
-    String mainFoodName = 'Mixed Food Items';
+    String mainFoodName =
+        'Mixed Food Items'; // This will be overwritten by Gemini's name
 
     print('Processing ${items.length} items from CalorieNinjas response');
-
-    // Extract main food name from the first item or original query
-    if (items.isNotEmpty) {
-      final firstItem = items[0];
-      if (firstItem is Map<String, dynamic> && firstItem['name'] != null) {
-        mainFoodName = _cleanFoodName(firstItem['name'].toString());
-
-        // If multiple items, make it more descriptive
-        if (items.length > 1) {
-          mainFoodName =
-              '$mainFoodName and ${items.length - 1} other ingredient${items.length > 2 ? 's' : ''}';
-        }
-      }
-    }
 
     for (int i = 0; i < items.length; i++) {
       final item = items[i];
@@ -222,7 +287,8 @@ Expected API Output Format:
         final fat = _parseDouble(item['fat_total_g']);
         final fiber = _parseDouble(item['fiber_g']);
         final sugar = _parseDouble(item['sugar_g']);
-        final sodium = _parseDouble(item['sodium_mg']) / 1000; // Convert mg to g
+        final sodium =
+            _parseDouble(item['sodium_mg']) / 1000; // Convert mg to g
         final weight = _parseDouble(item['serving_size_g']);
         final name = _cleanFoodName(item['name']?.toString() ?? 'Unknown');
 
@@ -247,12 +313,15 @@ Expected API Output Format:
           'serving_size_g': weight.round(),
         });
 
-        print('Processed ingredient ${i + 1}: $name - ${calories.round()} cal, ${weight.round()}g');
+        print(
+          'Processed ingredient ${i + 1}: $name - ${calories.round()} cal, ${weight.round()}g',
+        );
       }
     }
 
     final result = {
-      'food_name': mainFoodName,
+      'food_name':
+          mainFoodName, // Placeholder, will be replaced by Gemini's name
       'confidence': 0.85, // High confidence since we have detailed breakdown
       'source': 'gemini_calorieninjas',
       'nutrition': {
@@ -270,7 +339,9 @@ Expected API Output Format:
       'original_query': originalQuery,
     };
 
-    print('Final nutrition summary: ${totalCalories.round()} cal, ${totalProtein.toStringAsFixed(1)}g protein, ${totalCarbs.toStringAsFixed(1)}g carbs, ${totalFat.toStringAsFixed(1)}g fat');
+    print(
+      'Final nutrition summary from CalorieNinjas: ${totalCalories.round()} cal, ${totalProtein.toStringAsFixed(1)}g protein, ${totalCarbs.toStringAsFixed(1)}g carbs, ${totalFat.toStringAsFixed(1)}g fat',
+    );
     print('Total ingredients processed: ${ingredients.length}');
 
     return result;
@@ -365,6 +436,7 @@ Expected API Output Format:
   static Map<String, dynamic> _getDefaultResponse() {
     return {
       'food_name': 'Unknown Food Item',
+      'description': 'Could not identify food item. Please edit manually.',
       'confidence': 0.5,
       'source': 'default',
       'nutrition': _getDefaultNutrition(),
@@ -380,7 +452,6 @@ Expected API Output Format:
         },
       ],
       'serving_size': '100g',
-      'description': 'Could not identify food item. Please edit manually.',
     };
   }
 }

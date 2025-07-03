@@ -7,10 +7,10 @@ import 'base_viewmodel.dart';
 
 class AuthViewModel extends BaseViewModel {
   final UserRepository _userRepository;
-  
+
   UserModel? _currentUser;
   UserModel? get currentUser => _currentUser;
-  
+
   bool get isLoggedIn => _currentUser != null;
 
   AuthViewModel(this._userRepository) {
@@ -63,7 +63,7 @@ class AuthViewModel extends BaseViewModel {
 
   Future<bool> signIn(String email, String password) async {
     setState(ViewState.busy);
-    
+
     try {
       final user = await _userRepository.signInWithEmail(email, password);
       if (user != null) {
@@ -80,11 +80,19 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
-  Future<bool> register(String email, String password, String displayName) async {
+  Future<bool> register(
+    String email,
+    String password,
+    String displayName,
+  ) async {
     setState(ViewState.busy);
-    
+
     try {
-      final user = await _userRepository.registerWithEmail(email, password, displayName);
+      final user = await _userRepository.registerWithEmail(
+        email,
+        password,
+        displayName,
+      );
       if (user != null) {
         _currentUser = user;
         setState(ViewState.idle);
@@ -101,7 +109,7 @@ class AuthViewModel extends BaseViewModel {
 
   Future<void> signOut() async {
     setState(ViewState.busy);
-    
+
     try {
       await _userRepository.signOut();
       _currentUser = null;
@@ -113,7 +121,7 @@ class AuthViewModel extends BaseViewModel {
 
   Future<bool> resetPassword(String email) async {
     setState(ViewState.busy);
-    
+
     try {
       await _userRepository.resetPassword(email);
       setState(ViewState.idle);
@@ -163,6 +171,8 @@ class AuthViewModel extends BaseViewModel {
 
   // Form validation
   String? validateEmail(String? email) => Validators.validateEmail(email);
-  String? validatePassword(String? password) => Validators.validatePassword(password);
-  String? validateDisplayName(String? name) => Validators.validateDisplayName(name);
+  String? validatePassword(String? password) =>
+      Validators.validatePassword(password);
+  String? validateDisplayName(String? name) =>
+      Validators.validateDisplayName(name);
 }

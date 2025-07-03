@@ -6,15 +6,15 @@ import 'base_viewmodel.dart';
 
 class HomeViewModel extends BaseViewModel {
   final MealRepository _mealRepository;
-  
+
   List<MealModel> _todaysMeals = [];
   Map<String, double> _todaysNutrition = {};
   DateTime _selectedDate = DateTime.now();
-  
+
   List<MealModel> get todaysMeals => _todaysMeals;
   Map<String, double> get todaysNutrition => _todaysNutrition;
   DateTime get selectedDate => _selectedDate;
-  
+
   int get totalCalories => _todaysNutrition['calories']?.round() ?? 0;
   double get proteinGrams => _todaysNutrition['protein'] ?? 0;
   double get carbsGrams => _todaysNutrition['carbs'] ?? 0;
@@ -24,11 +24,14 @@ class HomeViewModel extends BaseViewModel {
 
   Future<void> loadTodaysMeals([String? userId]) async {
     if (userId == null) return;
-    
+
     setState(ViewState.busy);
-    
+
     try {
-      _todaysMeals = await _mealRepository.getMealsForDate(userId, _selectedDate);
+      _todaysMeals = await _mealRepository.getMealsForDate(
+        userId,
+        _selectedDate,
+      );
       await _calculateNutritionSummary(userId);
       setState(ViewState.idle);
     } catch (e) {
@@ -39,7 +42,10 @@ class HomeViewModel extends BaseViewModel {
   // Add this method to refresh meals without showing loading state
   Future<void> refreshTodaysMeals(String userId) async {
     try {
-      _todaysMeals = await _mealRepository.getMealsForDate(userId, _selectedDate);
+      _todaysMeals = await _mealRepository.getMealsForDate(
+        userId,
+        _selectedDate,
+      );
       await _calculateNutritionSummary(userId);
       notifyListeners(); // Just notify listeners without changing state
     } catch (e) {
@@ -49,13 +55,17 @@ class HomeViewModel extends BaseViewModel {
 
   Future<void> _calculateNutritionSummary(String userId) async {
     try {
-      final startOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+      final startOfDay = DateTime(
+        _selectedDate.year,
+        _selectedDate.month,
+        _selectedDate.day,
+      );
       final endOfDay = startOfDay.add(const Duration(days: 1));
-      
+
       _todaysNutrition = await _mealRepository.getNutritionSummary(
-        userId, 
-        startOfDay, 
-        endOfDay
+        userId,
+        startOfDay,
+        endOfDay,
       );
     } catch (e) {
       print('Error calculating nutrition summary: $e');
@@ -70,7 +80,7 @@ class HomeViewModel extends BaseViewModel {
 
   Future<void> deleteMeal(String mealId, String userId) async {
     setState(ViewState.busy);
-    
+
     try {
       await _mealRepository.deleteMeal(mealId);
       await refreshTodaysMeals(userId); // Use refresh instead of full reload

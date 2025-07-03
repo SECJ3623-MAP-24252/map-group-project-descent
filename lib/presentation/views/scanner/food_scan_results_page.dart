@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:convert'; // Import dart:convert for base64Encode
 import 'package:provider/provider.dart';
 import '../../viewmodels/scanner_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/home_viewmodel.dart';
+import '../nutrition/edit_food_page.dart'; // Import the correct edit page
 
 class FoodScanResultsPage extends StatefulWidget {
   final File imageFile;
@@ -46,7 +48,7 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
     final scannerViewModel = context.read<ScannerViewModel>();
     final authViewModel = context.read<AuthViewModel>();
     final homeViewModel = context.read<HomeViewModel>();
-    
+
     if (authViewModel.currentUser != null) {
       try {
         await scannerViewModel.saveMealFromScan(
@@ -62,37 +64,42 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
         if (mounted) {
           showDialog(
             context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Success!'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    '${_nutritionData['food_name']} has been added to your $_selectedMealType.',
-                    textAlign: TextAlign.center,
+            builder:
+                (context) => AlertDialog(
+                  title: const Text('Success!'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 48,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '${_nutritionData['food_name']} has been added to your $_selectedMealType.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pop(context); // Go back to scanner
-                    Navigator.pop(context); // Go back to home
-                  },
-                  child: const Text('OK'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pop(context); // Go back to scanner
+                        Navigator.pop(context); // Go back to home
+                      },
+                      child: const Text('OK'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Close dialog
+                        Navigator.pushNamed(context, '/nutrition');
+                      },
+                      child: const Text('View Nutrition'),
+                    ),
+                  ],
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pushNamed(context, '/nutrition');
-                  },
-                  child: const Text('View Nutrition'),
-                ),
-              ],
-            ),
           );
         }
       } catch (e) {
@@ -109,17 +116,34 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
   }
 
   void _editNutrition() async {
+    // Pass the current nutritionData (which includes Gemini's name, description, and CalorieNinjas' nutrition)
+    // to EditFoodPage as initialScanData.
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditNutritionPage(nutritionData: _nutritionData),
+        builder:
+            (context) => EditFoodPage(
+              initialScanData: {
+                ..._nutritionData,
+                'mealType': _selectedMealType, // Pass selected meal type
+                'imageUrl':
+                    'data:image/jpeg;base64,${base64Encode(widget.imageFile.readAsBytesSync())}', // Pass image as base64
+              },
+            ),
       ),
     );
 
-    if (result != null) {
-      setState(() {
-        _nutritionData = result;
-      });
+    if (result != null && result is bool && result) {
+      // If EditFoodPage indicates a successful update, refresh data and pop back to home
+      final authViewModel = context.read<AuthViewModel>();
+      final homeViewModel = context.read<HomeViewModel>();
+      if (authViewModel.currentUser != null) {
+        await homeViewModel.refreshTodaysMeals(authViewModel.currentUser!.uid);
+      }
+      if (mounted) {
+        Navigator.pop(context); // Pop back to scanner
+        Navigator.pop(context); // Pop back to home
+      }
     }
   }
 
@@ -202,15 +226,17 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: confidence > 80
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
+                          color:
+                              confidence > 80
+                                  ? Colors.green.withOpacity(0.1)
+                                  : Colors.orange.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           '$confidence% confidence',
                           style: TextStyle(
-                            color: confidence > 80 ? Colors.green : Colors.orange,
+                            color:
+                                confidence > 80 ? Colors.green : Colors.orange,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -263,14 +289,15 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                 child: DropdownButton<String>(
                   value: _selectedMealType,
                   isExpanded: true,
-                  items: _mealTypes
-                      .map(
-                        (type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ),
-                      )
-                      .toList(),
+                  items:
+                      _mealTypes
+                          .map(
+                            (type) => DropdownMenuItem(
+                              value: type,
+                              child: Text(type),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedMealType = value!;
@@ -349,7 +376,8 @@ class _FoodScanResultsPageState extends State<FoodScanResultsPage> {
                           value: '${nutrition['sugar']}g',
                           color: Colors.purple,
                         ),
-                        if (nutrition['sodium'] != null && nutrition['sodium'] > 0)
+                        if (nutrition['sodium'] != null &&
+                            nutrition['sodium'] > 0)
                           _NutritionItem(
                             label: 'Sodium',
                             value: '${nutrition['sodium']}g',
@@ -502,194 +530,6 @@ class _NutritionItem extends StatelessWidget {
           style: const TextStyle(color: Colors.black54, fontSize: 12),
         ),
       ],
-    );
-  }
-}
-
-class EditNutritionPage extends StatefulWidget {
-  final Map<String, dynamic> nutritionData;
-
-  const EditNutritionPage({Key? key, required this.nutritionData})
-      : super(key: key);
-
-  @override
-  State<EditNutritionPage> createState() => _EditNutritionPageState();
-}
-
-class _EditNutritionPageState extends State<EditNutritionPage> {
-  late TextEditingController _nameController;
-  late TextEditingController _caloriesController;
-  late TextEditingController _proteinController;
-  late TextEditingController _carbsController;
-  late TextEditingController _fatController;
-  late TextEditingController _servingSizeController;
-
-  @override
-  void initState() {
-    super.initState();
-    final nutrition = widget.nutritionData['nutrition'] as Map<String, dynamic>;
-
-    _nameController = TextEditingController(
-      text: widget.nutritionData['food_name'],
-    );
-    _caloriesController = TextEditingController(
-      text: nutrition['calories'].toString(),
-    );
-    _proteinController = TextEditingController(
-      text: nutrition['protein'].toString(),
-    );
-    _carbsController = TextEditingController(
-      text: nutrition['carbs'].toString(),
-    );
-    _fatController = TextEditingController(text: nutrition['fat'].toString());
-    _servingSizeController = TextEditingController(
-      text: widget.nutritionData['serving_size'],
-    );
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _caloriesController.dispose();
-    _proteinController.dispose();
-    _carbsController.dispose();
-    _fatController.dispose();
-    _servingSizeController.dispose();
-    super.dispose();
-  }
-
-  void _saveChanges() {
-    final updatedData = Map<String, dynamic>.from(widget.nutritionData);
-    updatedData['food_name'] = _nameController.text;
-    updatedData['serving_size'] = _servingSizeController.text;
-    updatedData['nutrition'] = {
-      'calories': int.tryParse(_caloriesController.text) ?? 0,
-      'protein': double.tryParse(_proteinController.text) ?? 0.0,
-      'carbs': double.tryParse(_carbsController.text) ?? 0.0,
-      'fat': double.tryParse(_fatController.text) ?? 0.0,
-      'fiber': updatedData['nutrition']['fiber'] ?? 0.0,
-      'sugar': updatedData['nutrition']['sugar'] ?? 0.0,
-      'sodium': updatedData['nutrition']['sodium'] ?? 0.0,
-    };
-
-    Navigator.pop(context, updatedData);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Edit Nutrition',
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    _buildTextField('Food Name', _nameController),
-                    const SizedBox(height: 16),
-                    _buildTextField('Serving Size', _servingSizeController),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      'Calories',
-                      _caloriesController,
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      'Protein (g)',
-                      _proteinController,
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      'Carbs (g)',
-                      _carbsController,
-                      isNumber: true,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField('Fat (g)', _fatController, isNumber: true),
-                  ],
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _saveChanges,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF7A4D),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Save Changes',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller, {
-    bool isNumber = false,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.grey[50],
-      ),
     );
   }
 }

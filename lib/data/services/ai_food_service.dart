@@ -123,25 +123,6 @@ Expected API Output Format:
         }
       } else {
         print('Gemini API error: ${response.statusCode} - ${response.body}');
-
-        // Check if we need to switch to a different model
-        if (response.statusCode == 404) {
-          final errorData = jsonDecode(response.body);
-          if (errorData != null &&
-              errorData is Map<String, dynamic> &&
-              errorData['error'] != null &&
-              errorData['error'] is Map<String, dynamic>) {
-            final error = errorData['error'] as Map<String, dynamic>;
-            final message = error['message']?.toString() ?? '';
-
-            if (message.contains('deprecated') ||
-                message.contains('not found')) {
-              print(
-                'Model deprecated or not found. Please update the model name in the code.',
-              );
-            }
-          }
-        }
       }
     } catch (e) {
       print('Error in _analyzeImageWithGemini: $e');

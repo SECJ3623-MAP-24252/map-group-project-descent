@@ -10,12 +10,16 @@ class NutritionViewModel extends BaseViewModel {
   List<MealModel> _dailyMeals = [];
   int _selectedDayIndex = 2; // Default to middle day
   List<DateTime> _weekDays = [];
+  List<int> _weeklyCalories = List.filled(7, 0);
+  bool _isWeeklyCaloriesLoading = false;
   
   List<MealModel> get meals => _meals;
   List<MealModel> get dailyMeals => _dailyMeals;
   int get selectedDayIndex => _selectedDayIndex;
   List<DateTime> get weekDays => _weekDays;
   DateTime get selectedDate => _weekDays.isNotEmpty ? _weekDays[_selectedDayIndex] : DateTime.now();
+  List<int> get weeklyCalories => _weeklyCalories;
+  bool get isWeeklyCaloriesLoading => _isWeeklyCaloriesLoading;
 
   NutritionViewModel(this._mealRepository) {
     _initializeWeekDays();
@@ -146,5 +150,23 @@ class NutritionViewModel extends BaseViewModel {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}';
+  }
+
+  Future<void> fetchWeeklyCalories(String userId) async {
+    _isWeeklyCaloriesLoading = true;
+    notifyListeners();
+    try {
+      final List<int> calories = [];
+      for (final day in _weekDays) {
+        final meals = await _mealRepository.getMealsForDate(userId, day);
+        final total = meals.fold<int>(0, (sum, meal) => sum + (meal.calories is int ? meal.calories as int : (meal.calories as num).round()));
+        calories.add(total);
+      }
+      _weeklyCalories = calories;
+    } catch (e) {
+      _weeklyCalories = List.filled(7, 0);
+    }
+    _isWeeklyCaloriesLoading = false;
+    notifyListeners();
   }
 }

@@ -322,6 +322,7 @@ class HomePageLandscape extends StatelessWidget {
           _buildNavItem(Icons.timeline, 'Progress', () {}),
           _buildNavItem(Icons.person, 'Profile', () => Navigator.pushNamed(context, '/profile')),
           _buildNavItem(Icons.settings, 'Settings', () => Navigator.pushNamed(context, '/profile')),
+          _buildNavItem(Icons.bar_chart, 'Graph', () => Navigator.pushNamed(context, '/nutrition-graph')),
         ],
       ),
     );

@@ -335,18 +335,25 @@ class _HomePageState extends State<HomePage> {
               unselectedItemColor: const Color(0xFFB0B0B0),
               elevation: 0,
               items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.calendar_today),
+                  icon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.restaurant),
                   label: 'Nutrition',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.add_circle),
+                  icon: Icon(Icons.add),
                   label: 'Add',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person),
                   label: 'Profile',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.bar_chart),
+                  label: 'Graph',
                 ),
               ],
             ),
@@ -366,14 +373,12 @@ class _HomePageState extends State<HomePage> {
   void _onBottomNavTap(int index) {
     switch (index) {
       case 0:
-        // Already on home - reset selection
         setState(() {
           _selectedIndex = 0;
         });
         break;
       case 1:
         Navigator.pushNamed(context, '/nutrition').then((_) {
-          // Reset to home when returning and refresh meals
           setState(() {
             _selectedIndex = 0;
           });
@@ -388,7 +393,6 @@ class _HomePageState extends State<HomePage> {
         break;
       case 3:
         Navigator.pushNamed(context, '/profile').then((_) async {
-          // Reset to home when returning and refresh both meals and user data
           setState(() {
             _selectedIndex = 0;
           });
@@ -396,9 +400,11 @@ class _HomePageState extends State<HomePage> {
           final homeViewModel = context.read<HomeViewModel>();
           final userId = authViewModel.currentUser?.uid ?? 'default_user';
           homeViewModel.refreshTodaysMeals(userId);
-          // Refresh user data to update profile picture
           await authViewModel.refreshUserData();
         });
+        break;
+      case 4:
+        Navigator.pushNamed(context, '/nutrition-graph');
         break;
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:convert';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/home_viewmodel.dart';
 
@@ -27,22 +28,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onBottomNavTap(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-
     switch (index) {
       case 0:
-        // Already on home
+        // Already on home - reset selection
+        setState(() {
+          _selectedIndex = 0;
+        });
         break;
       case 1:
-        Navigator.pushNamed(context, '/nutrition');
+        Navigator.pushNamed(context, '/nutrition').then((_) {
+          // Reset to home when returning and refresh meals
+          setState(() {
+            _selectedIndex = 0;
+          });
+          final authViewModel = context.read<AuthViewModel>();
+          final homeViewModel = context.read<HomeViewModel>();
+          final userId = authViewModel.currentUser?.uid ?? 'default_user';
+          homeViewModel.refreshTodaysMeals(userId);
+        });
         break;
       case 2:
         _showAddFoodOptions();
         break;
       case 3:
-        Navigator.pushNamed(context, '/profile');
+        Navigator.pushNamed(context, '/profile').then((_) async {
+          // Reset to home when returning and refresh both meals and user data
+          setState(() {
+            _selectedIndex = 0;
+          });
+          final authViewModel = context.read<AuthViewModel>();
+          final homeViewModel = context.read<HomeViewModel>();
+          final userId = authViewModel.currentUser?.uid ?? 'default_user';
+          homeViewModel.refreshTodaysMeals(userId);
+          // Refresh user data to update profile picture
+          await authViewModel.refreshUserData();
+        });
         break;
     }
   }
@@ -106,7 +126,7 @@ class _HomePageState extends State<HomePage> {
                   subtitle: const Text('Enter food details manually'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/edit-food');
+                    Navigator.pushNamed(context, '/add-food');
                   },
                 ),
                 const SizedBox(height: 20),
@@ -114,6 +134,39 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
     );
+  }
+
+  Widget _buildProfileImage(String? photoURL) {
+    if (photoURL != null && photoURL.startsWith('data:image')) {
+      // Base64 image
+      try {
+        final base64String = photoURL.split(',')[1];
+        final bytes = base64Decode(base64String);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
+        );
+      } catch (e) {
+        print('Error decoding base64 image: $e');
+      }
+    } else if (photoURL != null && photoURL.startsWith('http')) {
+      // Network image
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Image.network(
+          photoURL,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.person, color: Colors.black, size: 24);
+          },
+        ),
+      );
+    }
+
+    // Default icon
+    return const Icon(Icons.person, color: Colors.black, size: 24);
   }
 
   @override
@@ -148,35 +201,19 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       // Avatar
                       GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/profile'),
+                        onTap:
+                            () => Navigator.pushNamed(context, '/profile').then(
+                              (_) async {
+                                // Refresh user data when returning from profile
+                                final authViewModel =
+                                    context.read<AuthViewModel>();
+                                await authViewModel.refreshUserData();
+                              },
+                            ),
                         child: CircleAvatar(
                           radius: 24,
                           backgroundColor: const Color(0xFFD6F36B),
-                          child:
-                              currentUser?.photoURL != null
-                                  ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: Image.network(
-                                      currentUser!.photoURL!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) {
-                                        return const Icon(
-                                          Icons.person,
-                                          color: Colors.black,
-                                          size: 24,
-                                        );
-                                      },
-                                    ),
-                                  )
-                                  : const Icon(
-                                    Icons.person,
-                                    color: Colors.black,
-                                    size: 24,
-                                  ),
+                          child: _buildProfileImage(currentUser?.photoURL),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -345,11 +382,10 @@ class _HomePageState extends State<HomePage> {
 
                           return GestureDetector(
                             onTap: () {
-                              homeViewModel.selectDate(day['fullDate']);
                               final userId =
                                   authViewModel.currentUser?.uid ??
                                   'default_user';
-                              homeViewModel.loadTodaysMeals(userId);
+                              homeViewModel.selectDate(day['fullDate'], userId);
                             },
                             child: _DayItem(
                               day: day['day'],
@@ -387,7 +423,13 @@ class _HomePageState extends State<HomePage> {
                                   context,
                                   '/edit-food',
                                   arguments: meal,
-                                );
+                                ).then((_) {
+                                  // Refresh meals when returning from edit
+                                  final userId =
+                                      authViewModel.currentUser?.uid ??
+                                      'default_user';
+                                  homeViewModel.refreshTodaysMeals(userId);
+                                });
                               },
                             ),
                           )

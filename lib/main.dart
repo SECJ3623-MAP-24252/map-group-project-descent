@@ -8,11 +8,12 @@ import 'presentation/viewmodels/scanner_viewmodel.dart';
 import 'presentation/viewmodels/nutrition_viewmodel.dart';
 import 'presentation/viewmodels/profile_viewmodel.dart';
 import 'app/routes.dart';
+import 'presentation/views/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  setupDependencyInjection();
+  await setupDependencyInjection();
   runApp(const MyApp());
 }
 
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.green,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        initialRoute: '/',
+        home: const SplashScreen(),
         onGenerateRoute: AppRoutes.generateRoute,
       ),
     );

@@ -1,6 +1,5 @@
 import 'package:get_it/get_it.dart';
 import '../../data/services/firebase_service.dart';
-import '../../data/services/ai_food_service.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/meal_repository.dart';
 import '../../data/repositories/ai_food_repository.dart';
@@ -12,34 +11,21 @@ import '../../presentation/viewmodels/profile_viewmodel.dart';
 
 final GetIt getIt = GetIt.instance;
 
-void setupDependencyInjection() {
+Future<void> setupDependencyInjection() async {
   // Services
-  getIt.registerLazySingleton<FirebaseService>(() => FirebaseService());
-  getIt.registerLazySingleton<AIFoodService>(() => AIFoodService());
+  final firebaseService = FirebaseService();
+  await firebaseService.initialize();
+  getIt.registerSingleton<FirebaseService>(firebaseService);
 
   // Repositories
-  getIt.registerLazySingleton<UserRepository>(
-    () => UserRepository(getIt<FirebaseService>()),
-  );
-  getIt.registerLazySingleton<MealRepository>(
-    () => MealRepository(getIt<FirebaseService>()),
-  );
+  getIt.registerLazySingleton<UserRepository>(() => UserRepository(getIt<FirebaseService>()));
+  getIt.registerLazySingleton<MealRepository>(() => MealRepository(getIt<FirebaseService>()));
   getIt.registerLazySingleton<AIFoodRepository>(() => AIFoodRepository());
 
   // ViewModels
-  getIt.registerFactory<AuthViewModel>(
-    () => AuthViewModel(getIt<UserRepository>()),
-  );
-  getIt.registerFactory<HomeViewModel>(
-    () => HomeViewModel(getIt<MealRepository>()),
-  );
-  getIt.registerFactory<ScannerViewModel>(
-    () => ScannerViewModel(getIt<AIFoodRepository>(), getIt<MealRepository>()),
-  );
-  getIt.registerFactory<NutritionViewModel>(
-    () => NutritionViewModel(getIt<MealRepository>()),
-  );
-  getIt.registerFactory<ProfileViewModel>(
-    () => ProfileViewModel(getIt<UserRepository>()),
-  );
+  getIt.registerFactory<AuthViewModel>(() => AuthViewModel(getIt<UserRepository>()));
+  getIt.registerFactory<HomeViewModel>(() => HomeViewModel(getIt<MealRepository>()));
+  getIt.registerFactory<ScannerViewModel>(() => ScannerViewModel(getIt<AIFoodRepository>(), getIt<MealRepository>()));
+  getIt.registerFactory<NutritionViewModel>(() => NutritionViewModel(getIt<MealRepository>()));
+  getIt.registerFactory<ProfileViewModel>(() => ProfileViewModel(getIt<UserRepository>()));
 }

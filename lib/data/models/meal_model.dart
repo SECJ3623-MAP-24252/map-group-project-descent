@@ -1,5 +1,45 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class IngredientModel {
+  final String name;
+  final String weight;
+  final int calories;
+  final double? protein;
+  final double? carbs;
+  final double? fat;
+
+  IngredientModel({
+    required this.name,
+    required this.weight,
+    required this.calories,
+    this.protein,
+    this.carbs,
+    this.fat,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'weight': weight,
+      'calories': calories,
+      'protein': protein,
+      'carbs': carbs,
+      'fat': fat,
+    };
+  }
+
+  factory IngredientModel.fromMap(Map<String, dynamic> map) {
+    return IngredientModel(
+      name: map['name'] ?? '',
+      weight: map['weight'] ?? '0g',
+      calories: (map['calories'] ?? 0).toInt(),
+      protein: map['protein']?.toDouble(),
+      carbs: map['carbs']?.toDouble(),
+      fat: map['fat']?.toDouble(),
+    );
+  }
+}
+
 class MealModel {
   final String id;
   final String userId;
@@ -10,9 +50,11 @@ class MealModel {
   final double carbs;
   final double fat;
   final DateTime timestamp;
-  final String? imageUrl;
+  final String? imageUrl; // Now stores base64 image data
   final String mealType; // breakfast, lunch, dinner, snack
   final Map<String, dynamic>? additionalNutrients;
+  final List<IngredientModel>? ingredients; // Store individual ingredients
+  final String? scanSource; // 'ai_scan', 'manual', etc.
 
   MealModel({
     required this.id,
@@ -27,12 +69,13 @@ class MealModel {
     this.imageUrl,
     required this.mealType,
     this.additionalNutrients,
+    this.ingredients,
+    this.scanSource,
   });
 
   // Convert MealModel to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'userId': userId,
       'name': name,
       'description': description,
@@ -40,18 +83,28 @@ class MealModel {
       'protein': protein,
       'carbs': carbs,
       'fat': fat,
-      'timestamp': timestamp,
+      'timestamp': Timestamp.fromDate(timestamp),
       'imageUrl': imageUrl,
       'mealType': mealType,
       'additionalNutrients': additionalNutrients,
+      'ingredients': ingredients?.map((ing) => ing.toMap()).toList(),
+      'scanSource': scanSource,
     };
   }
 
   // Create MealModel from Firestore document
   factory MealModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    
+    List<IngredientModel>? ingredientsList;
+    if (data['ingredients'] != null) {
+      ingredientsList = (data['ingredients'] as List)
+          .map((ing) => IngredientModel.fromMap(ing as Map<String, dynamic>))
+          .toList();
+    }
+    
     return MealModel(
-      id: data['id'] ?? doc.id,
+      id: doc.id, // Use document ID
       userId: data['userId'] ?? '',
       name: data['name'] ?? '',
       description: data['description'],
@@ -63,6 +116,8 @@ class MealModel {
       imageUrl: data['imageUrl'],
       mealType: data['mealType'] ?? 'other',
       additionalNutrients: data['additionalNutrients'],
+      ingredients: ingredientsList,
+      scanSource: data['scanSource'],
     );
   }
 
@@ -80,6 +135,8 @@ class MealModel {
     String? imageUrl,
     String? mealType,
     Map<String, dynamic>? additionalNutrients,
+    List<IngredientModel>? ingredients,
+    String? scanSource,
   }) {
     return MealModel(
       id: id ?? this.id,
@@ -94,6 +151,8 @@ class MealModel {
       imageUrl: imageUrl ?? this.imageUrl,
       mealType: mealType ?? this.mealType,
       additionalNutrients: additionalNutrients ?? this.additionalNutrients,
+      ingredients: ingredients ?? this.ingredients,
+      scanSource: scanSource ?? this.scanSource,
     );
   }
 }

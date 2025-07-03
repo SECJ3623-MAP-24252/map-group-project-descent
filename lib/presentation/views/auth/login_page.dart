@@ -151,6 +151,37 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                         ],
+
+                        const SizedBox(height: 32),
+
+                        // Sign Up Link
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "Don't have an account? ",
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, '/register'),
+                                child: const Text(
+                                  'Sign Up',
+                                  style: TextStyle(
+                                    color: Color(0xFFFF7A4D),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
                       ],
                     ),
                   ),

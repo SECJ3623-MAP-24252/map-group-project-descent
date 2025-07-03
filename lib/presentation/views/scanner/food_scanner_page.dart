@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import '../../viewmodels/scanner_viewmodel.dart';
-import 'food_scan_results.dart';
+import 'food_scan_results_page.dart';
 
 class FoodScannerPage extends StatefulWidget {
   const FoodScannerPage({Key? key}) : super(key: key);
@@ -46,25 +46,22 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: const Text('AI Services'),
-                          content: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'This app uses Gemini for food recognition and CalorieNinjas for nutrition data.',
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
-                            ),
-                          ],
+                    builder: (context) => AlertDialog(
+                      title: const Text('AI Services'),
+                      content: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('This app uses Gemini for food recognition and CalorieNinjas for nutrition data.'),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
                         ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -127,29 +124,27 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
                             ),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child:
-                              scannerViewModel.isBusy
-                                  ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const CircularProgressIndicator(
-                                          color: Color(0xFFD6F36B),
+                          child: scannerViewModel.isBusy
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const CircularProgressIndicator(
+                                        color: Color(0xFFD6F36B),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        scannerViewModel.scanningStatus,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
                                         ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          scannerViewModel.scanningStatus,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  : null,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -162,30 +157,20 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
                         children: [
                           // Gallery button
                           GestureDetector(
-                            onTap:
-                                scannerViewModel.isBusy
-                                    ? null
-                                    : () async {
-                                      final result =
-                                          await scannerViewModel
-                                              .pickFromGallery();
-                                      if (result != null && mounted) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (
-                                                  context,
-                                                ) => FoodScanResultsPage(
-                                                  imageFile:
-                                                      result['imageFile'],
-                                                  nutritionData:
-                                                      result['nutritionData'],
-                                                ),
-                                          ),
-                                        );
-                                      }
-                                    },
+                            onTap: scannerViewModel.isBusy ? null : () async {
+                              final result = await scannerViewModel.pickFromGallery();
+                              if (result != null && mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FoodScanResultsPage(
+                                      imageFile: result['imageFile'],
+                                      nutritionData: result['nutritionData'],
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                             child: Container(
                               width: 60,
                               height: 60,
@@ -203,54 +188,40 @@ class _FoodScannerPageState extends State<FoodScannerPage> {
 
                           // Capture button
                           GestureDetector(
-                            onTap:
-                                scannerViewModel.isBusy
-                                    ? null
-                                    : () async {
-                                      final result =
-                                          await scannerViewModel
-                                              .captureAndAnalyze();
-                                      if (result != null && mounted) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder:
-                                                (
-                                                  context,
-                                                ) => FoodScanResultsPage(
-                                                  imageFile:
-                                                      result['imageFile'],
-                                                  nutritionData:
-                                                      result['nutritionData'],
-                                                ),
-                                          ),
-                                        );
-                                      }
-                                    },
+                            onTap: scannerViewModel.isBusy ? null : () async {
+                              final result = await scannerViewModel.captureAndAnalyze();
+                              if (result != null && mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FoodScanResultsPage(
+                                      imageFile: result['imageFile'],
+                                      nutritionData: result['nutritionData'],
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                             child: Container(
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
                                 color: const Color(0xFFD6F36B),
                                 borderRadius: BorderRadius.circular(40),
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 4,
-                                ),
+                                border: Border.all(color: Colors.white, width: 4),
                               ),
-                              child:
-                                  scannerViewModel.isBusy
-                                      ? const Center(
-                                        child: CircularProgressIndicator(
-                                          color: Colors.black,
-                                          strokeWidth: 3,
-                                        ),
-                                      )
-                                      : const Icon(
-                                        Icons.camera_alt,
+                              child: scannerViewModel.isBusy
+                                  ? const Center(
+                                      child: CircularProgressIndicator(
                                         color: Colors.black,
-                                        size: 35,
+                                        strokeWidth: 3,
                                       ),
+                                    )
+                                  : const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.black,
+                                      size: 35,
+                                    ),
                             ),
                           ),
 

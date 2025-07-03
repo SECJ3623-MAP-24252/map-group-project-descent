@@ -18,6 +18,7 @@ class AddFoodPage extends StatefulWidget {
 class _AddFoodPageState extends State<AddFoodPage> {
   List<_Ingredient> ingredients = [];
   late TextEditingController _foodNameController;
+  late TextEditingController _descriptionController;
   String _selectedMealType = 'Breakfast';
   final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   bool _isCalculating = false;
@@ -26,6 +27,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
   void initState() {
     super.initState();
     _foodNameController = TextEditingController();
+    _descriptionController = TextEditingController();
 
     // Auto-select meal type based on time
     final hour = DateTime.now().hour;
@@ -45,6 +47,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
   @override
   void dispose() {
     _foodNameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -121,9 +124,12 @@ class _AddFoodPageState extends State<AddFoodPage> {
         id: '', // Empty for new meal
         userId: userId,
         name: _foodNameController.text,
-        description: ingredients
-            .map((ing) => '${ing.amount} ${ing.unit} ${ing.name}')
-            .join(', '),
+        description:
+            _descriptionController.text.isEmpty
+                ? ingredients
+                    .map((ing) => '${ing.amount} ${ing.unit} ${ing.name}')
+                    .join(', ')
+                : _descriptionController.text,
         calories: (nutritionData['calories'] ?? 0).toDouble(),
         protein: (nutritionData['protein'] ?? 0).toDouble(),
         carbs: (nutritionData['carbs'] ?? 0).toDouble(),
@@ -334,6 +340,19 @@ class _AddFoodPageState extends State<AddFoodPage> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.restaurant),
               ),
+            ),
+            const SizedBox(height: 16),
+
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.description),
+                hintText: 'Add a description for this meal...',
+              ),
+              maxLines: 3,
+              minLines: 1,
             ),
             const SizedBox(height: 16),
 
@@ -613,8 +632,8 @@ class _IngredientDialog extends StatefulWidget {
 class _IngredientDialogState extends State<_IngredientDialog> {
   late TextEditingController nameController;
   late TextEditingController amountController;
-  String unit = 'piece';
-  final List<String> units = ['piece', 'grams', 'ml', 'cup', 'tablespoon'];
+  String unit = 'grams';
+  final List<String> units = ['grams', 'piece', 'ml', 'cup', 'tablespoon'];
 
   @override
   void initState() {
@@ -623,7 +642,7 @@ class _IngredientDialogState extends State<_IngredientDialog> {
     amountController = TextEditingController(
       text: widget.ingredient?.amount ?? '',
     );
-    unit = widget.ingredient?.unit ?? 'piece';
+    unit = widget.ingredient?.unit ?? 'grams';
   }
 
   @override

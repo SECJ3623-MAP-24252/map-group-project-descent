@@ -64,6 +64,13 @@ class _HomePageState extends State<HomePage> {
           await authViewModel.refreshUserData();
         });
         break;
+      case 4:
+        Navigator.pushNamed(context, '/analytics').then((_) async {
+          setState(() {
+            _selectedIndex = 0;
+          });
+        });
+        break;
     }
   }
 
@@ -417,7 +424,7 @@ class _HomePageState extends State<HomePage> {
                               items: [meal.description ?? 'No description'],
                               calories: meal.calories.toInt(),
                               time:
-                                  '${meal.timestamp.hour}:${meal.timestamp.minute.toString().padLeft(2, '0')}',
+                                  '${meal.timestamp.toLocal().hour}:${meal.timestamp.toLocal().minute.toString().padLeft(2, '0')}',
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
@@ -479,16 +486,13 @@ class _HomePageState extends State<HomePage> {
                   icon: Icon(Icons.person),
                   label: 'Profile',
                 ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.analytics),
+                  label: 'Analytics',
+                ),
               ],
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: const Color(0xFFD6F36B),
-            onPressed: () => Navigator.pushNamed(context, '/scanner'),
-            child: const Icon(Icons.camera_alt, color: Colors.black, size: 28),
-          ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerDocked,
         );
       },
     );

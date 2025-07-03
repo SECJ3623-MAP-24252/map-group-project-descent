@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/home_viewmodel.dart';
+import 'home_page_landscape.dart'; // Import the landscape view
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,157 +21,26 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authViewModel = context.read<AuthViewModel>();
       final homeViewModel = context.read<HomeViewModel>();
-
       // Load meals with user ID if available
       final userId = authViewModel.currentUser?.uid ?? 'default_user';
       homeViewModel.loadTodaysMeals(userId);
     });
   }
 
-  void _onBottomNavTap(int index) {
-    switch (index) {
-      case 0:
-        // Already on home - reset selection
-        setState(() {
-          _selectedIndex = 0;
-        });
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/nutrition').then((_) {
-          // Reset to home when returning and refresh meals
-          setState(() {
-            _selectedIndex = 0;
-          });
-          final authViewModel = context.read<AuthViewModel>();
-          final homeViewModel = context.read<HomeViewModel>();
-          final userId = authViewModel.currentUser?.uid ?? 'default_user';
-          homeViewModel.refreshTodaysMeals(userId);
-        });
-        break;
-      case 2:
-        _showAddFoodOptions();
-        break;
-      case 3:
-        Navigator.pushNamed(context, '/profile').then((_) async {
-          // Reset to home when returning and refresh both meals and user data
-          setState(() {
-            _selectedIndex = 0;
-          });
-          final authViewModel = context.read<AuthViewModel>();
-          final homeViewModel = context.read<HomeViewModel>();
-          final userId = authViewModel.currentUser?.uid ?? 'default_user';
-          homeViewModel.refreshTodaysMeals(userId);
-          // Refresh user data to update profile picture
-          await authViewModel.refreshUserData();
-        });
-        break;
-    }
-  }
-
-  void _showAddFoodOptions() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Add Food',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD6F36B).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Color(0xFFFF7A4D),
-                    ),
-                  ),
-                  title: const Text('Scan Food'),
-                  subtitle: const Text('Use camera to identify food'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/scanner');
-                  },
-                ),
-                ListTile(
-                  leading: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD6F36B).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.edit, color: Color(0xFFFF7A4D)),
-                  ),
-                  title: const Text('Add Manually'),
-                  subtitle: const Text('Enter food details manually'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/add-food');
-                  },
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
+  @override
+  Widget build(BuildContext context) {
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        if (orientation == Orientation.landscape) {
+          return const HomePageLandscape();
+        } else {
+          return _buildPortraitLayout();
+        }
+      },
     );
   }
 
-  Widget _buildProfileImage(String? photoURL) {
-    if (photoURL != null && photoURL.startsWith('data:image')) {
-      // Base64 image
-      try {
-        final base64String = photoURL.split(',')[1];
-        final bytes = base64Decode(base64String);
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
-        );
-      } catch (e) {
-        print('Error decoding base64 image: $e');
-      }
-    } else if (photoURL != null && photoURL.startsWith('http')) {
-      // Network image
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Image.network(
-          photoURL,
-          width: 48,
-          height: 48,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.person, color: Colors.black, size: 24);
-          },
-        ),
-      );
-    }
-
-    // Default icon
-    return const Icon(Icons.person, color: Colors.black, size: 24);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildPortraitLayout() {
     return Consumer2<AuthViewModel, HomeViewModel>(
       builder: (context, authViewModel, homeViewModel, child) {
         final currentUser = authViewModel.currentUser;
@@ -379,7 +249,6 @@ class _HomePageState extends State<HomePage> {
                           final isSelected =
                               homeViewModel.selectedDate.day ==
                               day['fullDate'].day;
-
                           return GestureDetector(
                             onTap: () {
                               final userId =
@@ -494,6 +363,147 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _onBottomNavTap(int index) {
+    switch (index) {
+      case 0:
+        // Already on home - reset selection
+        setState(() {
+          _selectedIndex = 0;
+        });
+        break;
+      case 1:
+        Navigator.pushNamed(context, '/nutrition').then((_) {
+          // Reset to home when returning and refresh meals
+          setState(() {
+            _selectedIndex = 0;
+          });
+          final authViewModel = context.read<AuthViewModel>();
+          final homeViewModel = context.read<HomeViewModel>();
+          final userId = authViewModel.currentUser?.uid ?? 'default_user';
+          homeViewModel.refreshTodaysMeals(userId);
+        });
+        break;
+      case 2:
+        _showAddFoodOptions();
+        break;
+      case 3:
+        Navigator.pushNamed(context, '/profile').then((_) async {
+          // Reset to home when returning and refresh both meals and user data
+          setState(() {
+            _selectedIndex = 0;
+          });
+          final authViewModel = context.read<AuthViewModel>();
+          final homeViewModel = context.read<HomeViewModel>();
+          final userId = authViewModel.currentUser?.uid ?? 'default_user';
+          homeViewModel.refreshTodaysMeals(userId);
+          // Refresh user data to update profile picture
+          await authViewModel.refreshUserData();
+        });
+        break;
+    }
+  }
+
+  void _showAddFoodOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Add Food',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Color(0xFFFF7A4D),
+                    ),
+                  ),
+                  title: const Text('Scan Food'),
+                  subtitle: const Text('Use camera to identify food'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/scanner');
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.edit, color: Color(0xFFFF7A4D)),
+                  ),
+                  title: const Text('Add Manually'),
+                  subtitle: const Text('Enter food details manually'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/add-food');
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _buildProfileImage(String? photoURL) {
+    if (photoURL != null && photoURL.startsWith('data:image')) {
+      // Base64 image
+      try {
+        final base64String = photoURL.split(',')[1];
+        final bytes = base64Decode(base64String);
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Image.memory(bytes, width: 48, height: 48, fit: BoxFit.cover),
+        );
+      } catch (e) {
+        print('Error decoding base64 image: $e');
+      }
+    } else if (photoURL != null && photoURL.startsWith('http')) {
+      // Network image
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Image.network(
+          photoURL,
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.person, color: Colors.black, size: 24);
+          },
+        ),
+      );
+    }
+    // Default icon
+    return const Icon(Icons.person, color: Colors.black, size: 24);
+  }
+
   Widget _buildNutrientInfo(String label, String value, Color color) {
     return Column(
       children: [
@@ -518,6 +528,7 @@ class _DayItem extends StatelessWidget {
   final String day;
   final String date;
   final bool selected;
+
   const _DayItem({
     required this.day,
     required this.date,

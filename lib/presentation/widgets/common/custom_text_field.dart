@@ -43,10 +43,9 @@ class CustomTextField extends StatelessWidget {
           enabled: enabled,
           decoration: InputDecoration(
             hintText: 'Enter your ${label.toLowerCase()}',
-            prefixIcon:
-                prefixIcon != null
-                    ? Icon(prefixIcon, color: Colors.black54)
-                    : null,
+            prefixIcon: prefixIcon != null 
+                ? Icon(prefixIcon, color: Colors.black54) 
+                : null,
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: enabled ? Colors.grey[50] : Colors.grey[100],
@@ -60,7 +59,10 @@ class CustomTextField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFFD6F36B), width: 2),
+              borderSide: const BorderSide(
+                color: Color(0xFFD6F36B),
+                width: 2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

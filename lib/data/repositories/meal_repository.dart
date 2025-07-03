@@ -30,26 +30,24 @@ class MealRepository {
       print('Getting meals for user $userId on ${date.toString()}');
       print('Date range: ${startOfDay.toString()} to ${endOfDay.toString()}');
 
-      final querySnapshot =
-          await _firestore
-              .collection('meals')
-              .where('userId', isEqualTo: userId)
-              .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
-              .where('timestamp', isLessThan: endOfDay)
-              .orderBy('timestamp')
-              .get();
+      final querySnapshot = await _firestore
+          .collection('meals')
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
+          .where('timestamp', isLessThan: endOfDay)
+          .orderBy('timestamp')
+          .get();
 
       print('Found ${querySnapshot.docs.length} meals for the date');
 
-      final meals =
-          querySnapshot.docs
-              .map((doc) => MealModel.fromFirestore(doc))
-              .toList();
-
+      final meals = querySnapshot.docs
+          .map((doc) => MealModel.fromFirestore(doc))
+          .toList();
+      
       for (final meal in meals) {
         print('Loaded meal: ${meal.id} - ${meal.name} (${meal.calories} cal)');
       }
-
+      
       return meals;
     } catch (e) {
       print('Error getting meals for date: $e');
@@ -61,14 +59,14 @@ class MealRepository {
   Future<MealModel?> getMealById(String mealId) async {
     try {
       print('Getting meal by ID: $mealId');
-
+      
       if (mealId.isEmpty) {
         print('Meal ID is empty');
         return null;
       }
-
+      
       final doc = await _firestore.collection('meals').doc(mealId).get();
-
+      
       if (doc.exists) {
         print('Meal found: ${doc.id}');
         final meal = MealModel.fromFirestore(doc);
@@ -88,7 +86,7 @@ class MealRepository {
   Future<void> updateMeal(MealModel meal) async {
     try {
       print('Updating meal in Firestore: ${meal.id} - ${meal.name}');
-
+      
       if (meal.id.isEmpty) {
         throw Exception('Meal ID is required for update');
       }
@@ -102,18 +100,16 @@ class MealRepository {
       print('Meal updated successfully in Firestore');
 
       // Verify the update by reading the document back
-      final updatedDoc =
-          await _firestore.collection('meals').doc(meal.id).get();
+      final updatedDoc = await _firestore.collection('meals').doc(meal.id).get();
       if (updatedDoc.exists) {
         final updatedMeal = MealModel.fromFirestore(updatedDoc);
         print('Verification: Updated meal name is now: ${updatedMeal.name}');
         print('Verification: Updated meal calories: ${updatedMeal.calories}');
-        print(
-          'Verification: Updated meal ingredients: ${updatedMeal.ingredients?.length ?? 0}',
-        );
+        print('Verification: Updated meal ingredients: ${updatedMeal.ingredients?.length ?? 0}');
       } else {
         print('Warning: Could not verify meal update - document not found');
       }
+      
     } catch (e) {
       print('Error updating meal in Firestore: $e');
       throw Exception('Failed to update meal: ${e.toString()}');
@@ -124,17 +120,17 @@ class MealRepository {
   Future<void> deleteMeal(String mealId) async {
     try {
       print('Deleting meal from Firestore: $mealId');
-
+      
       if (mealId.isEmpty) {
         throw Exception('Meal ID is required for deletion');
       }
-
+      
       // Check if meal exists before deleting
       final doc = await _firestore.collection('meals').doc(mealId).get();
       if (!doc.exists) {
         throw Exception('Meal not found with ID: $mealId');
       }
-
+      
       await _firestore.collection('meals').doc(mealId).delete();
       print('Meal deleted successfully from Firestore');
     } catch (e) {
@@ -144,23 +140,16 @@ class MealRepository {
   }
 
   // Get nutrition summary for date range
-  Future<Map<String, double>> getNutritionSummary(
-    String userId,
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
+  Future<Map<String, double>> getNutritionSummary(String userId, DateTime startDate, DateTime endDate) async {
     try {
-      print(
-        'Getting nutrition summary for user $userId from ${startDate.toString()} to ${endDate.toString()}',
-      );
-
-      final querySnapshot =
-          await _firestore
-              .collection('meals')
-              .where('userId', isEqualTo: userId)
-              .where('timestamp', isGreaterThanOrEqualTo: startDate)
-              .where('timestamp', isLessThanOrEqualTo: endDate)
-              .get();
+      print('Getting nutrition summary for user $userId from ${startDate.toString()} to ${endDate.toString()}');
+      
+      final querySnapshot = await _firestore
+          .collection('meals')
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isGreaterThanOrEqualTo: startDate)
+          .where('timestamp', isLessThanOrEqualTo: endDate)
+          .get();
 
       double totalCalories = 0;
       double totalProtein = 0;
@@ -184,7 +173,7 @@ class MealRepository {
         'carbs': totalCarbs,
         'fat': totalFat,
       };
-
+      
       print('Nutrition summary: $summary');
       return summary;
     } catch (e) {

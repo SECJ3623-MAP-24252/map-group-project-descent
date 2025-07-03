@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:convert'; // Import dart:convert for base64Encode
+import 'dart:convert'; // Add this import for base64Encode
 import 'package:provider/provider.dart';
 import '../../viewmodels/scanner_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';

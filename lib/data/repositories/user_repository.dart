@@ -19,7 +19,7 @@ class UserRepository {
         email: email,
         password: password,
       );
-
+      
       if (credential.user != null) {
         await _updateLastLogin(credential.user!.uid);
         return await getUserData(credential.user!.uid);
@@ -30,21 +30,17 @@ class UserRepository {
     }
   }
 
-  Future<UserModel?> registerWithEmail(
-    String email,
-    String password,
-    String displayName,
-  ) async {
+  Future<UserModel?> registerWithEmail(String email, String password, String displayName) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-
+      
       if (credential.user != null) {
         // Update the user's display name
         await credential.user!.updateDisplayName(displayName);
-
+        
         final userModel = UserModel(
           uid: credential.user!.uid,
           email: email,
@@ -52,7 +48,7 @@ class UserRepository {
           createdAt: DateTime.now(),
           lastLoginAt: DateTime.now(),
         );
-
+        
         await createUserDocument(userModel);
         return userModel;
       }
@@ -91,16 +87,11 @@ class UserRepository {
     }
   }
 
-  Future<void> updateUserProfile(
-    String uid, {
-    String? displayName,
-    String? photoURL,
-    File? imageFile,
-  }) async {
+  Future<void> updateUserProfile(String uid, {String? displayName, String? photoURL, File? imageFile}) async {
     try {
       final updates = <String, dynamic>{};
       if (displayName != null) updates['displayName'] = displayName;
-
+      
       // Convert image to base64 if provided
       if (imageFile != null) {
         final bytes = await imageFile.readAsBytes();
@@ -109,11 +100,11 @@ class UserRepository {
       } else if (photoURL != null) {
         updates['photoURL'] = photoURL;
       }
-
+      
       updates['lastLoginAt'] = Timestamp.now();
 
       await _firestore.collection('users').doc(uid).update(updates);
-
+      
       // Also update Firebase Auth profile
       final user = _auth.currentUser;
       if (user != null) {
@@ -140,6 +131,6 @@ class UserRepository {
   }
 
   User? get currentUser => _auth.currentUser;
-
+  
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }

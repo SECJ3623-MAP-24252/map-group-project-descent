@@ -13,8 +13,7 @@ class AIFoodService {
 
       if (geminiResponse != null &&
           geminiResponse['ingredientsString'] != null &&
-          geminiResponse['ingredientsString'] != null &&
-          geminiResponse['ingredientsString']!.isNotEmpty) {
+          geminiResponse['ingredientsString']?.isNotEmpty == true) {
         print('Successfully extracted from Gemini:');
         print('  Name: ${geminiResponse['mealName']}');
         print('  Description: ${geminiResponse['mealDescription']}');
@@ -22,7 +21,7 @@ class AIFoodService {
 
         // Step 2: Use CalorieNinjas to get nutrition data for the ingredients
         final nutritionData = await _getNutritionFromCalorieNinjas(
-          geminiResponse['ingredientsString']!,
+          geminiResponse['ingredientsString'] ?? '',
         );
 
         if (nutritionData != null) {

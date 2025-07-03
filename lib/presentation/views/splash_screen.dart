@@ -17,14 +17,12 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _checkAuthState() async {
-    await Future.delayed(
-      const Duration(seconds: 2),
-    ); // Show splash for 2 seconds
-
+    await Future.delayed(const Duration(seconds: 2)); // Show splash for 2 seconds
+    
     if (mounted) {
       final authViewModel = context.read<AuthViewModel>();
       final isLoggedIn = await authViewModel.checkAuthState();
-
+      
       if (isLoggedIn) {
         Navigator.pushReplacementNamed(context, '/home');
       } else {
@@ -73,7 +71,10 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 8),
             const Text(
               'Track your healthy journey',
-              style: TextStyle(fontSize: 16, color: Colors.black54),
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+              ),
             ),
             const SizedBox(height: 40),
             const CircularProgressIndicator(

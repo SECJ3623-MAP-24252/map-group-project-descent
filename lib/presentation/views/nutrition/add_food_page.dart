@@ -124,10 +124,10 @@ class _AddFoodPageState extends State<AddFoodPage> {
         description: ingredients
             .map((ing) => '${ing.amount} ${ing.unit} ${ing.name}')
             .join(', '),
-        calories: nutritionData['calories']?.toDouble() ?? 0.0,
-        protein: nutritionData['protein']?.toDouble() ?? 0.0,
-        carbs: nutritionData['carbs']?.toDouble() ?? 0.0,
-        fat: nutritionData['fat']?.toDouble() ?? 0.0,
+        calories: (nutritionData['calories'] ?? 0).toDouble(),
+        protein: (nutritionData['protein'] ?? 0).toDouble(),
+        carbs: (nutritionData['carbs'] ?? 0).toDouble(),
+        fat: (nutritionData['fat'] ?? 0).toDouble(),
         timestamp: DateTime.now(),
         mealType: _selectedMealType,
         ingredients: ingredientModels,

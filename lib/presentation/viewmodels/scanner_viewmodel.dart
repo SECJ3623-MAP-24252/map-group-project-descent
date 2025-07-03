@@ -11,7 +11,7 @@ class ScannerViewModel extends BaseViewModel {
   final AIFoodRepository _aiFoodRepository;
   final MealRepository _mealRepository;
   final ImagePicker _imagePicker = ImagePicker();
-
+  
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
@@ -54,7 +54,10 @@ class ScannerViewModel extends BaseViewModel {
     try {
       final XFile image = await _cameraController!.takePicture();
       final result = await _analyzeFood(File(image.path));
-      return {'imageFile': File(image.path), 'nutritionData': result};
+      return {
+        'imageFile': File(image.path),
+        'nutritionData': result,
+      };
     } catch (e) {
       setError('Failed to capture image: ${e.toString()}');
       return null;
@@ -77,7 +80,10 @@ class ScannerViewModel extends BaseViewModel {
 
       if (image != null) {
         final result = await _analyzeFood(File(image.path));
-        return {'imageFile': File(image.path), 'nutritionData': result};
+        return {
+          'imageFile': File(image.path),
+          'nutritionData': result,
+        };
       } else {
         setState(ViewState.idle);
         _updateScanningStatus('');
@@ -92,9 +98,9 @@ class ScannerViewModel extends BaseViewModel {
   Future<Map<String, dynamic>> _analyzeFood(File imageFile) async {
     try {
       _updateScanningStatus('Analyzing with AI...');
-
+      
       final results = await _aiFoodRepository.analyzeFoodImage(imageFile);
-
+      
       _scanResults = results;
       setState(ViewState.idle);
       _updateScanningStatus('');
@@ -113,40 +119,36 @@ class ScannerViewModel extends BaseViewModel {
   }) async {
     try {
       setState(ViewState.busy);
-
+      
       final nutrition = nutritionData['nutrition'] ?? {};
-
+      
       // Convert image to base64
       final bytes = await imageFile.readAsBytes();
       final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-
+      
       // Convert ingredients from scan results to IngredientModel list
       List<IngredientModel>? ingredientsList;
       if (nutritionData['ingredients'] != null) {
         final ingredientsData = nutritionData['ingredients'] as List;
-        ingredientsList =
-            ingredientsData.map((ing) {
-              return IngredientModel(
-                name: ing['name'] ?? 'Unknown',
-                weight: ing['weight'] ?? '0g',
-                calories: (ing['calories'] ?? 0).toInt(),
-                protein: ing['protein']?.toDouble(),
-                carbs: ing['carbs']?.toDouble(),
-                fat: ing['fat']?.toDouble(),
-              );
-            }).toList();
-
+        ingredientsList = ingredientsData.map((ing) {
+          return IngredientModel(
+            name: ing['name'] ?? 'Unknown',
+            weight: ing['weight'] ?? '0g',
+            calories: (ing['calories'] ?? 0).toInt(),
+            protein: ing['protein']?.toDouble(),
+            carbs: ing['carbs']?.toDouble(),
+            fat: ing['fat']?.toDouble(),
+          );
+        }).toList();
+        
         print('Converted ${ingredientsList.length} ingredients for storage');
       }
-
+      
       final meal = MealModel(
         id: '',
         userId: userId,
-        name:
-            nutritionData['food_name'] ??
-            'Unknown Food', // Use name from Gemini
-        description:
-            nutritionData['description'], // Use description from Gemini
+        name: nutritionData['food_name'] ?? 'Unknown Food', // Use name from Gemini
+        description: nutritionData['description'], // Use description from Gemini
         calories: (nutrition['calories'] ?? 0).toDouble(),
         protein: (nutrition['protein'] ?? 0).toDouble(),
         carbs: (nutrition['carbs'] ?? 0).toDouble(),
@@ -159,9 +161,7 @@ class ScannerViewModel extends BaseViewModel {
       );
 
       await _mealRepository.createMeal(meal);
-      print(
-        'Meal saved successfully with ${ingredientsList?.length ?? 0} ingredients',
-      );
+      print('Meal saved successfully with ${ingredientsList?.length ?? 0} ingredients');
       setState(ViewState.idle);
     } catch (e) {
       setError('Failed to save meal: ${e.toString()}');
@@ -171,8 +171,7 @@ class ScannerViewModel extends BaseViewModel {
   Future<void> toggleFlash() async {
     if (_cameraController != null && _isCameraInitialized) {
       try {
-        final FlashMode newFlashMode =
-            _isFlashOn ? FlashMode.off : FlashMode.torch;
+        final FlashMode newFlashMode = _isFlashOn ? FlashMode.off : FlashMode.torch;
         await _cameraController!.setFlashMode(newFlashMode);
         _isFlashOn = !_isFlashOn;
         notifyListeners();

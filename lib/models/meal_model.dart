@@ -96,4 +96,4 @@ class MealModel {
       additionalNutrients: additionalNutrients ?? this.additionalNutrients,
     );
   }
-}
+} 

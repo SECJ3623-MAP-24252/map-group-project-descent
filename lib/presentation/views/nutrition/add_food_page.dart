@@ -18,7 +18,7 @@ class AddFoodPage extends StatefulWidget {
 class _AddFoodPageState extends State<AddFoodPage> {
   List<_Ingredient> ingredients = [];
   late TextEditingController _foodNameController;
-  late TextEditingController _descriptionController;
+  late TextEditingController _descriptionController; // Added description field
   String _selectedMealType = 'Breakfast';
   final List<String> _mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
   bool _isCalculating = false;
@@ -27,7 +27,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
   void initState() {
     super.initState();
     _foodNameController = TextEditingController();
-    _descriptionController = TextEditingController();
+    _descriptionController = TextEditingController(); // Initialize description controller
 
     // Auto-select meal type based on time
     final hour = DateTime.now().hour;
@@ -47,7 +47,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
   @override
   void dispose() {
     _foodNameController.dispose();
-    _descriptionController.dispose();
+    _descriptionController.dispose(); // Dispose description controller
     super.dispose();
   }
 
@@ -124,12 +124,7 @@ class _AddFoodPageState extends State<AddFoodPage> {
         id: '', // Empty for new meal
         userId: userId,
         name: _foodNameController.text,
-        description:
-            _descriptionController.text.isEmpty
-                ? ingredients
-                    .map((ing) => '${ing.amount} ${ing.unit} ${ing.name}')
-                    .join(', ')
-                : _descriptionController.text,
+        description: _descriptionController.text.isEmpty ? null : _descriptionController.text, // Use description field
         calories: (nutritionData['calories'] ?? 0).toDouble(),
         protein: (nutritionData['protein'] ?? 0).toDouble(),
         carbs: (nutritionData['carbs'] ?? 0).toDouble(),
@@ -343,16 +338,15 @@ class _AddFoodPageState extends State<AddFoodPage> {
             ),
             const SizedBox(height: 16),
 
+            // Added description field
             TextField(
               controller: _descriptionController,
               decoration: const InputDecoration(
                 labelText: 'Description (Optional)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.description),
-                hintText: 'Add a description for this meal...',
               ),
-              maxLines: 3,
-              minLines: 1,
+              maxLines: 2,
             ),
             const SizedBox(height: 16),
 
@@ -632,7 +626,7 @@ class _IngredientDialog extends StatefulWidget {
 class _IngredientDialogState extends State<_IngredientDialog> {
   late TextEditingController nameController;
   late TextEditingController amountController;
-  String unit = 'grams';
+  String unit = 'grams'; // Default to grams
   final List<String> units = ['grams', 'piece', 'ml', 'cup', 'tablespoon'];
 
   @override
@@ -642,7 +636,7 @@ class _IngredientDialogState extends State<_IngredientDialog> {
     amountController = TextEditingController(
       text: widget.ingredient?.amount ?? '',
     );
-    unit = widget.ingredient?.unit ?? 'grams';
+    unit = widget.ingredient?.unit ?? 'grams'; // Default to grams
   }
 
   @override

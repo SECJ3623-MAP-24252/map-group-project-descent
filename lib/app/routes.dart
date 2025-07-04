@@ -10,6 +10,7 @@ import '../presentation/views/nutrition/add_food_page.dart';
 import '../presentation/views/nutrition/edit_food_page.dart';
 import '../presentation/views/scanner/food_scanner_page.dart';
 import '../presentation/views/scanner/food_scan_results_page.dart';
+import '../presentation/views/analytics/analytics_page.dart';
 import '../data/models/meal_model.dart';
 
 class AppRoutes {
@@ -64,6 +65,8 @@ class AppRoutes {
             ),
           ),
         );
+      case '/analytics':
+        return MaterialPageRoute(builder: (_) => const AnalyticsPage());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

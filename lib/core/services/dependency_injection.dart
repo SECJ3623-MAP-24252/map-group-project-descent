@@ -18,14 +18,26 @@ Future<void> setupDependencyInjection() async {
   getIt.registerSingleton<FirebaseService>(firebaseService);
 
   // Repositories
-  getIt.registerLazySingleton<UserRepository>(() => UserRepository(getIt<FirebaseService>()));
-  getIt.registerLazySingleton<MealRepository>(() => MealRepository(getIt<FirebaseService>()));
+  getIt.registerLazySingleton<UserRepository>(
+    () => UserRepository(getIt<FirebaseService>()),
+  );
+  getIt.registerLazySingleton<MealRepository>(() => MealRepository());
   getIt.registerLazySingleton<AIFoodRepository>(() => AIFoodRepository());
 
   // ViewModels
-  getIt.registerFactory<AuthViewModel>(() => AuthViewModel(getIt<UserRepository>()));
-  getIt.registerFactory<HomeViewModel>(() => HomeViewModel(getIt<MealRepository>()));
-  getIt.registerFactory<ScannerViewModel>(() => ScannerViewModel(getIt<AIFoodRepository>(), getIt<MealRepository>()));
-  getIt.registerFactory<NutritionViewModel>(() => NutritionViewModel(getIt<MealRepository>()));
-  getIt.registerFactory<ProfileViewModel>(() => ProfileViewModel(getIt<UserRepository>()));
+  getIt.registerFactory<AuthViewModel>(
+    () => AuthViewModel(getIt<UserRepository>()),
+  );
+  getIt.registerFactory<HomeViewModel>(
+    () => HomeViewModel(getIt<MealRepository>()),
+  );
+  getIt.registerFactory<ScannerViewModel>(
+    () => ScannerViewModel(getIt<AIFoodRepository>(), getIt<MealRepository>()),
+  );
+  getIt.registerFactory<NutritionViewModel>(
+    () => NutritionViewModel(getIt<MealRepository>()),
+  );
+  getIt.registerFactory<ProfileViewModel>(
+    () => ProfileViewModel(getIt<UserRepository>()),
+  );
 }

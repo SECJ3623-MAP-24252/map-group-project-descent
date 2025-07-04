@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/home_viewmodel.dart';
@@ -423,8 +424,7 @@ class _HomePageState extends State<HomePage> {
                               title: meal.name,
                               items: [meal.description ?? 'No description'],
                               calories: meal.calories.toInt(),
-                              time:
-                                  '${meal.timestamp.toLocal().hour}:${meal.timestamp.toLocal().minute.toString().padLeft(2, '0')}',
+                              time: DateFormat('h:mm a').format(meal.timestamp.toLocal()),
                               onTap: () {
                                 Navigator.pushNamed(
                                   context,
@@ -442,9 +442,9 @@ class _HomePageState extends State<HomePage> {
                           )
                           .toList(),
                       _AddMealCard(
-                        title: 'Add Dinner',
-                        subtitle: 'Recommended 450-650 cal',
-                        icon: Icons.dinner_dining,
+                        title: 'Add Meal',
+                        subtitle: 'Log your next meal',
+                        icon: Icons.add,
                         onTap: _showAddFoodOptions,
                       ),
                     ],
@@ -591,11 +591,14 @@ class _MealCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Text(
@@ -612,6 +615,7 @@ class _MealCard extends StatelessWidget {
                       child: Text(
                         '• $item',
                         style: const TextStyle(color: Colors.black54),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   )

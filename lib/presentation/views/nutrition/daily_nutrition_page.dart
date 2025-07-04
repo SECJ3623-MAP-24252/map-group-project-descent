@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../viewmodels/nutrition_viewmodel.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 
@@ -46,7 +47,14 @@ class _DailyNutritionPageState extends State<DailyNutritionPage> {
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                // Always navigate to home page
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
             ),
             title: const Text(
               'Daily Nutrition',
@@ -217,7 +225,7 @@ class _DailyNutritionPageState extends State<DailyNutritionPage> {
                                           ),
                                           const SizedBox(width: 16),
                                           Text(
-                                            '${meal.timestamp.hour}:${meal.timestamp.minute.toString().padLeft(2, '0')}',
+                                            DateFormat('h:mm a').format(meal.timestamp.toLocal()),
                                             style: const TextStyle(color: Colors.black54, fontSize: 13),
                                           ),
                                         ],

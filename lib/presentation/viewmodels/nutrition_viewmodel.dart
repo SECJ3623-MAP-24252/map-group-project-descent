@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../data/repositories/meal_repository.dart';
 import '../../data/models/meal_model.dart';
-import 'base_viewmodel.dart';
+import '../viewmodels/base_viewmodel.dart';
+import 'notification_viewmodel.dart';
 
 class NutritionViewModel extends BaseViewModel {
   final MealRepository _mealRepository;
+  final NotificationViewModel? _notificationViewModel;
   
   List<MealModel> _meals = [];
   List<MealModel> _dailyMeals = [];
@@ -13,6 +15,18 @@ class NutritionViewModel extends BaseViewModel {
   List<int> _weeklyCalories = List.filled(7, 0);
   bool _isWeeklyCaloriesLoading = false;
   
+  double _totalCalories = 0;
+  double get totalCalories => _totalCalories;
+
+  double _totalProtein = 0;
+  double get totalProtein => _totalProtein;
+
+  double _totalCarbs = 0;
+  double get totalCarbs => _totalCarbs;
+
+  double _totalFat = 0;
+  double get totalFat => _totalFat;
+
   List<MealModel> get meals => _meals;
   List<MealModel> get dailyMeals => _dailyMeals;
   int get selectedDayIndex => _selectedDayIndex;
@@ -21,7 +35,7 @@ class NutritionViewModel extends BaseViewModel {
   List<int> get weeklyCalories => _weeklyCalories;
   bool get isWeeklyCaloriesLoading => _isWeeklyCaloriesLoading;
 
-  NutritionViewModel(this._mealRepository) {
+  NutritionViewModel(this._mealRepository, [this._notificationViewModel]) {
     _initializeWeekDays();
   }
 
@@ -37,6 +51,14 @@ class NutritionViewModel extends BaseViewModel {
       print('Loading meals for selected day: ${selectedDate.toString()}');
       _meals = await _mealRepository.getMealsForDate(userId, selectedDate);
       print('Loaded ${_meals.length} meals for selected day');
+      _calculateTotals();
+      
+      // Check for calorie milestones after loading meals
+      if (_notificationViewModel != null) {
+        await _notificationViewModel!.checkCalorieMilestones();
+      }
+      
+      notifyListeners();
       setState(ViewState.idle);
     } catch (e) {
       print('Error loading meals for selected day: $e');
@@ -84,6 +106,13 @@ class NutritionViewModel extends BaseViewModel {
         final currentUserId = userId ?? 'default_user';
         await loadMealsForSelectedDay(currentUserId);
       }
+      
+      // Check for calorie milestones after deleting a meal
+      if (_notificationViewModel != null) {
+        await _notificationViewModel!.checkCalorieMilestones();
+      }
+      
+      notifyListeners();
       setState(ViewState.idle);
     } catch (e) {
       print('Error deleting meal: $e');
@@ -98,6 +127,16 @@ class NutritionViewModel extends BaseViewModel {
       print('Adding new meal: ${meal.name}');
       final mealId = await _mealRepository.createMeal(meal);
       print('Meal added successfully with ID: $mealId');
+      final newMeal = meal.copyWith(id: mealId);
+      _meals.add(newMeal);
+      _calculateTotals();
+      
+      // Check for calorie milestones after adding a meal
+      if (_notificationViewModel != null) {
+        await _notificationViewModel!.checkCalorieMilestones();
+      }
+      
+      notifyListeners();
       setState(ViewState.idle);
       return mealId;
     } catch (e) {
@@ -136,6 +175,14 @@ class NutritionViewModel extends BaseViewModel {
       if (mealIndex != -1) {
         _meals[mealIndex] = meal;
         print('Updated meal in local list at index $mealIndex');
+        _calculateTotals();
+        
+        // Check for calorie milestones after updating a meal
+        if (_notificationViewModel != null) {
+          await _notificationViewModel!.checkCalorieMilestones();
+        }
+        
+        notifyListeners();
       }
       
       setState(ViewState.idle);
@@ -168,5 +215,37 @@ class NutritionViewModel extends BaseViewModel {
     }
     _isWeeklyCaloriesLoading = false;
     notifyListeners();
+  }
+
+  void _calculateTotals() {
+    _totalCalories = _meals.fold(0, (sum, meal) => sum + meal.calories);
+    _totalProtein = _meals.fold(0, (sum, meal) => sum + meal.protein);
+    _totalCarbs = _meals.fold(0, (sum, meal) => sum + meal.carbs);
+    _totalFat = _meals.fold(0, (sum, meal) => sum + meal.fat);
+  }
+
+  List<MealModel> getMealsByType(String mealType) {
+    return _meals.where((meal) => meal.mealType.toLowerCase() == mealType.toLowerCase()).toList();
+  }
+
+  Future<Map<String, double>> getNutritionSummary(String userId, DateTime startDate, DateTime endDate) async {
+    try {
+      return await _mealRepository.getNutritionSummary(userId, startDate, endDate);
+    } catch (e) {
+      setError('Failed to get nutrition summary: $e');
+      return {};
+    }
+  }
+
+  bool get isCalorieGoalReached {
+    return _totalCalories >= 2000; // You can make this configurable
+  }
+
+  double get remainingCalories {
+    return (2000 - _totalCalories).clamp(0, double.infinity);
+  }
+
+  double get calorieProgressPercentage {
+    return (_totalCalories / 2000 * 100).clamp(0, 100);
   }
 }

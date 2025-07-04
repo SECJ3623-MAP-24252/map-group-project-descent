@@ -9,9 +9,11 @@ import 'presentation/viewmodels/nutrition_viewmodel.dart';
 import 'presentation/viewmodels/profile_viewmodel.dart';
 import 'app/routes.dart';
 import 'presentation/views/splash_screen.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   await Firebase.initializeApp();
   await setupDependencyInjection();
   runApp(const MyApp());

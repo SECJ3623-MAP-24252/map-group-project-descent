@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'dart:convert';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/home_viewmodel.dart';
-import 'home_page_landscape.dart'; // Import the landscape view
+import 'home_page_landscape.dart'; 
+import 'package:get_it/get_it.dart';
+import 'package:bitewise/data/services/notification_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -358,10 +360,23 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: const Color(0xFFD6F36B),
-            onPressed: () => Navigator.pushNamed(context, '/scanner'),
-            child: const Icon(Icons.camera_alt, color: Colors.black, size: 28),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () async {
+              final notificationService = GetIt.I<NotificationService>();
+              final now = DateTime.now();
+              final scheduledTime = now.add(const Duration(minutes: 1));
+              await notificationService.scheduleMealReminder(
+                mealType: 'test',
+                scheduledTime: scheduledTime,
+                id: 9999,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Test notification scheduled for 1 minute from now!')),
+              );
+            },
+            icon: const Icon(Icons.notifications_active),
+            label: const Text('Test Notification'),
+            backgroundColor: Color(0xFFD6F36B),
           ),
           floatingActionButtonLocation:
               FloatingActionButtonLocation.centerDocked,

@@ -38,34 +38,53 @@ class ProfileViewModel extends BaseViewModel {
       if (currentUser != null) {
         final firestore = FirebaseFirestore.instance;
         
-        // Calculate days active (days with at least one meal)
-        final mealsQuery = await firestore
-            .collection('meals')
-            .where('userId', isEqualTo: currentUser.uid)
-            .get();
+        // Get user document to access creation timestamp
+        final userDoc = await firestore.collection('users').doc(currentUser.uid).get();
         
-        final uniqueDays = <String>{};
-        int foodsScanned = 0;
-        
-        for (final doc in mealsQuery.docs) {
-          final timestamp = (doc.data()['timestamp'] as Timestamp).toDate();
-          final dayKey = '${timestamp.year}-${timestamp.month}-${timestamp.day}';
-          uniqueDays.add(dayKey);
+        if (userDoc.exists) {
+          final creationTimestamp = userDoc.data()?['createdAt'] as Timestamp?;
           
-          // Count foods that were scanned (have imageUrl or source indicates scanning)
-          final data = doc.data();
-          if (data['imageUrl'] != null || 
-              (data['description'] != null && data['description'].toString().contains('Scanned'))) {
-            foodsScanned++;
+          if (creationTimestamp != null) {
+            final creationDate = creationTimestamp.toDate();
+            final now = DateTime.now();
+            final difference = now.difference(creationDate);
+            final daysActive = difference.inDays;
+            
+            int foodsScanned = 0;
+            
+            final mealsQuery = await firestore
+                .collection('meals')
+                .where('userId', isEqualTo: currentUser.uid)
+                .get();
+            
+            for (final doc in mealsQuery.docs) {
+              final data = doc.data();
+              if (data['imageUrl'] != null ||
+                  (data['description'] != null && data['description'].toString().contains('Scanned'))) {
+                foodsScanned++;
+              }
+            }
+            
+            _userStats = {
+              'daysActive': daysActive,
+              'foodsScanned': foodsScanned,
+            };
+            
+            notifyListeners();
+          } else {
+            print('User creation timestamp not found.');
+            _userStats = {
+              'daysActive': 0,
+              'foodsScanned': 0,
+            };
           }
+        } else {
+          print('User document not found.');
+          _userStats = {
+            'daysActive': 0,
+            'foodsScanned': 0,
+          };
         }
-        
-        _userStats = {
-          'daysActive': uniqueDays.length,
-          'foodsScanned': foodsScanned,
-        };
-        
-        notifyListeners();
       }
     } catch (e) {
       print('Error loading user stats: $e');

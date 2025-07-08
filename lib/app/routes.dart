@@ -10,7 +10,7 @@ import '../presentation/views/nutrition/add_food_page.dart';
 import '../presentation/views/nutrition/edit_food_page.dart';
 import '../presentation/views/scanner/food_scanner_page.dart';
 import '../presentation/views/scanner/food_scan_results_page.dart';
-import '../presentation/views/nutrition/nutrition_graph_page.dart';
+import '../presentation/views/analytics/analytics_page.dart';
 import '../data/models/meal_model.dart';
 
 class AppRoutes {
@@ -35,16 +35,15 @@ class AppRoutes {
       case '/edit-food':
         final args = settings.arguments;
         if (args is MealModel) {
-          return MaterialPageRoute(
-            builder: (_) => EditFoodPage(meal: args),
-          );
+          return MaterialPageRoute(builder: (_) => EditFoodPage(meal: args));
         }
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(
-              child: Text('Invalid arguments for ${settings.name}'),
-            ),
-          ),
+          builder:
+              (_) => Scaffold(
+                body: Center(
+                  child: Text('Invalid arguments for ${settings.name}'),
+                ),
+              ),
         );
       case '/scanner':
         return MaterialPageRoute(builder: (_) => const FoodScannerPage());
@@ -52,28 +51,31 @@ class AppRoutes {
         final args = settings.arguments as Map<String, dynamic>?;
         if (args != null) {
           return MaterialPageRoute(
-            builder: (_) => FoodScanResultsPage(
-              imageFile: args['imageFile'],
-              nutritionData: args['nutritionData'],
-            ),
+            builder:
+                (_) => FoodScanResultsPage(
+                  imageFile: args['imageFile'],
+                  nutritionData: args['nutritionData'],
+                ),
           );
         }
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(
-              child: Text('Invalid arguments for ${settings.name}'),
-            ),
-          ),
+          builder:
+              (_) => Scaffold(
+                body: Center(
+                  child: Text('Invalid arguments for ${settings.name}'),
+                ),
+              ),
         );
-      case '/nutrition-graph':
-        return MaterialPageRoute(builder: (_) => const NutritionGraphPage());
+      case '/analytics':
+        return MaterialPageRoute(builder: (_) => const AnalyticsPage());
       default:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(
-              child: Text('No route defined for ${settings.name}'),
-            ),
-          ),
+          builder:
+              (_) => Scaffold(
+                body: Center(
+                  child: Text('No route defined for ${settings.name}'),
+                ),
+              ),
         );
     }
   }

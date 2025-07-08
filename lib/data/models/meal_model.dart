@@ -84,7 +84,7 @@ class MealModel {
       'carbs': carbs,
       'fat': fat,
       'timestamp': Timestamp.fromDate(timestamp),
-      'imageUrl': imageUrl,
+      'imageUrl': imageUrl, // Fixed the field name
       'mealType': mealType,
       'additionalNutrients': additionalNutrients,
       'ingredients': ingredients?.map((ing) => ing.toMap()).toList(),
@@ -96,6 +96,9 @@ class MealModel {
   factory MealModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     
+    print('MealModel.fromFirestore: Processing document ${doc.id}');
+    print('MealModel.fromFirestore: Document data: $data');
+    
     List<IngredientModel>? ingredientsList;
     if (data['ingredients'] != null) {
       ingredientsList = (data['ingredients'] as List)
@@ -103,7 +106,10 @@ class MealModel {
           .toList();
     }
     
-    return MealModel(
+    // Handle both imageUrl and imageUr1 (typo in your Firebase data)
+    String? imageUrl = data['imageUrl'] ?? data['imageUr1'];
+    
+    final meal = MealModel(
       id: doc.id, // Use document ID
       userId: data['userId'] ?? '',
       name: data['name'] ?? '',
@@ -113,12 +119,16 @@ class MealModel {
       carbs: (data['carbs'] ?? 0).toDouble(),
       fat: (data['fat'] ?? 0).toDouble(),
       timestamp: (data['timestamp'] as Timestamp).toDate(),
-      imageUrl: data['imageUrl'],
+      imageUrl: imageUrl,
       mealType: data['mealType'] ?? 'other',
       additionalNutrients: data['additionalNutrients'],
       ingredients: ingredientsList,
       scanSource: data['scanSource'],
     );
+    
+    print('MealModel.fromFirestore: Created meal - ${meal.name}, timestamp: ${meal.timestamp}, userId: ${meal.userId}');
+    
+    return meal;
   }
 
   // Create a copy of MealModel with updated fields

@@ -31,7 +31,10 @@ class MealRepository {
   // Update an existing meal
   Future<void> updateMeal(MealModel meal) async {
     try {
-      await _firestore.collection(_collection).doc(meal.id).update(meal.toMap());
+      await _firestore
+          .collection(_collection)
+          .doc(meal.id)
+          .update(meal.toMap());
     } catch (e) {
       throw Exception('Failed to update meal: $e');
     }
@@ -52,13 +55,17 @@ class MealRepository {
       final startOfDay = DateTime(date.year, date.month, date.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-          .orderBy('timestamp', descending: false)
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('userId', isEqualTo: userId)
+              .where(
+                'timestamp',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+              )
+              .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+              .orderBy('timestamp', descending: false)
+              .get();
 
       return querySnapshot.docs
           .map((doc) => MealModel.fromFirestore(doc))
@@ -69,15 +76,26 @@ class MealRepository {
   }
 
   // Get meals in a date range
-  Future<List<MealModel>> getMealsInDateRange(String userId, DateTime startDate, DateTime endDate) async {
+  Future<List<MealModel>> getMealsInDateRange(
+    String userId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
-          .orderBy('timestamp', descending: false)
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('userId', isEqualTo: userId)
+              .where(
+                'timestamp',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(startDate),
+              )
+              .where(
+                'timestamp',
+                isLessThanOrEqualTo: Timestamp.fromDate(endDate),
+              )
+              .orderBy('timestamp', descending: false)
+              .get();
 
       return querySnapshot.docs
           .map((doc) => MealModel.fromFirestore(doc))
@@ -88,10 +106,14 @@ class MealRepository {
   }
 
   // Get nutrition summary for a date range
-  Future<Map<String, double>> getNutritionSummary(String userId, DateTime startDate, DateTime endDate) async {
+  Future<Map<String, double>> getNutritionSummary(
+    String userId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
     try {
       final meals = await getMealsInDateRange(userId, startDate, endDate);
-      
+
       double totalCalories = 0;
       double totalProtein = 0;
       double totalCarbs = 0;
@@ -118,11 +140,12 @@ class MealRepository {
   // Get all meals for a user
   Future<List<MealModel>> getAllMealsForUser(String userId) async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .orderBy('timestamp', descending: true)
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('userId', isEqualTo: userId)
+              .orderBy('timestamp', descending: true)
+              .get();
 
       return querySnapshot.docs
           .map((doc) => MealModel.fromFirestore(doc))
@@ -135,12 +158,13 @@ class MealRepository {
   // Get meals by meal type
   Future<List<MealModel>> getMealsByType(String userId, String mealType) async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('mealType', isEqualTo: mealType)
-          .orderBy('timestamp', descending: true)
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('userId', isEqualTo: userId)
+              .where('mealType', isEqualTo: mealType)
+              .orderBy('timestamp', descending: true)
+              .get();
 
       return querySnapshot.docs
           .map((doc) => MealModel.fromFirestore(doc))
@@ -151,15 +175,19 @@ class MealRepository {
   }
 
   // Search meals by name
-  Future<List<MealModel>> searchMealsByName(String userId, String searchTerm) async {
+  Future<List<MealModel>> searchMealsByName(
+    String userId,
+    String searchTerm,
+  ) async {
     try {
-      final querySnapshot = await _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .orderBy('name')
-          .startAt([searchTerm])
-          .endAt([searchTerm + '\uf8ff'])
-          .get();
+      final querySnapshot =
+          await _firestore
+              .collection(_collection)
+              .where('userId', isEqualTo: userId)
+              .orderBy('name')
+              .startAt([searchTerm])
+              .endAt([searchTerm + '\uf8ff'])
+              .get();
 
       return querySnapshot.docs
           .map((doc) => MealModel.fromFirestore(doc))

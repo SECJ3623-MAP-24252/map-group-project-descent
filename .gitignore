@@ -45,3 +45,4 @@ app.*.map.json
 /android/app/release
 
 lib/services/api_config.dart
+/backend-scripts/bitewise-76709-firebase-adminsdk-fbsvc-d5a2c4bb21.json

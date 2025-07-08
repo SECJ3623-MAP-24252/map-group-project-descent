@@ -13,19 +13,23 @@ class DailyNutritionPage extends StatefulWidget {
 
 class _DailyNutritionPageState extends State<DailyNutritionPage> {
   int selectedDayIndex = 3; // Start with today (middle of the week)
+  String? _currentUserId; // To track if userId has changed
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
-      final nutritionViewModel = context.read<NutritionViewModel>();
-      final userId = authViewModel.currentUser?.uid;
-      
-      if (userId != null) {
-        nutritionViewModel.selectDay(selectedDayIndex, userId);
-      }
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authViewModel = context.watch<AuthViewModel>();
+    final nutritionViewModel = context.read<NutritionViewModel>();
+
+    final newUserId = authViewModel.currentUser?.uid;
+    if (newUserId != null && newUserId != _currentUserId) {
+      _currentUserId = newUserId;
+      nutritionViewModel.selectDay(selectedDayIndex, _currentUserId!);
+    } else if (newUserId == null && _currentUserId != null) {
+      // User logged out, clear meals
+      _currentUserId = null;
+      nutritionViewModel.clearMeals();
+    }
   }
 
   @override

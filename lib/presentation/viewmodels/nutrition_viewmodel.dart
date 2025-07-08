@@ -45,7 +45,7 @@ class NutritionViewModel extends BaseViewModel {
     
     try {
       // For now, use a default user ID
-      const userId = 'default_user';
+      const userId = 'default_user'; // This should ideally come from AuthViewModel
       _dailyMeals = await _mealRepository.getMealsForDate(userId, date);
       setState(ViewState.idle);
     } catch (e) {
@@ -146,5 +146,12 @@ class NutritionViewModel extends BaseViewModel {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}';
+  }
+
+  // New method to clear meals, useful on logout
+  void clearMeals() {
+    _meals = [];
+    _dailyMeals = [];
+    notifyListeners();
   }
 }

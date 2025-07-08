@@ -14,18 +14,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  String? _currentUserId; // To track if userId has changed
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authViewModel = context.read<AuthViewModel>();
-      final homeViewModel = context.read<HomeViewModel>();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authViewModel = context.watch<AuthViewModel>();
+    final homeViewModel = context.read<HomeViewModel>();
 
-      // Load meals with user ID if available
-      final userId = authViewModel.currentUser?.uid ?? 'default_user';
-      homeViewModel.loadTodaysMeals(userId);
-    });
+    final newUserId = authViewModel.currentUser?.uid;
+    print('HomePage: didChangeDependencies - newUserId: $newUserId, currentUserId: $_currentUserId');
+    
+    if (newUserId != null && newUserId != _currentUserId) {
+      print('HomePage: User ID changed, loading meals for: $newUserId');
+      _currentUserId = newUserId;
+      homeViewModel.loadTodaysMeals(_currentUserId!);
+    } else if (newUserId == null && _currentUserId != null) {
+      // User logged out, clear meals
+      print('HomePage: User logged out, clearing meals');
+      _currentUserId = null;
+      homeViewModel.clearMeals();
+    }
   }
 
   void _onBottomNavTap(int index) {
@@ -44,8 +53,10 @@ class _HomePageState extends State<HomePage> {
           });
           final authViewModel = context.read<AuthViewModel>();
           final homeViewModel = context.read<HomeViewModel>();
-          final userId = authViewModel.currentUser?.uid ?? 'default_user';
-          homeViewModel.refreshTodaysMeals(userId);
+          final userId = authViewModel.currentUser?.uid;
+          if (userId != null) {
+            homeViewModel.refreshTodaysMeals(userId);
+          }
         });
         break;
       case 2:
@@ -59,8 +70,10 @@ class _HomePageState extends State<HomePage> {
           });
           final authViewModel = context.read<AuthViewModel>();
           final homeViewModel = context.read<HomeViewModel>();
-          final userId = authViewModel.currentUser?.uid ?? 'default_user';
-          homeViewModel.refreshTodaysMeals(userId);
+          final userId = authViewModel.currentUser?.uid;
+          if (userId != null) {
+            homeViewModel.refreshTodaysMeals(userId);
+          }
           // Refresh user data to update profile picture
           await authViewModel.refreshUserData();
         });
@@ -118,7 +131,15 @@ class _HomePageState extends State<HomePage> {
                   subtitle: const Text('Use camera to identify food'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/scanner');
+                    Navigator.pushNamed(context, '/scanner').then((_) {
+                      // Refresh meals when returning from scanner
+                      final authViewModel = context.read<AuthViewModel>();
+                      final homeViewModel = context.read<HomeViewModel>();
+                      final userId = authViewModel.currentUser?.uid;
+                      if (userId != null) {
+                        homeViewModel.refreshTodaysMeals(userId);
+                      }
+                    });
                   },
                 ),
                 ListTile(
@@ -134,7 +155,15 @@ class _HomePageState extends State<HomePage> {
                   subtitle: const Text('Enter food details manually'),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.pushNamed(context, '/add-food');
+                    Navigator.pushNamed(context, '/add-food').then((_) {
+                      // Refresh meals when returning from add food
+                      final authViewModel = context.read<AuthViewModel>();
+                      final homeViewModel = context.read<HomeViewModel>();
+                      final userId = authViewModel.currentUser?.uid;
+                      if (userId != null) {
+                        homeViewModel.refreshTodaysMeals(userId);
+                      }
+                    });
                   },
                 ),
                 const SizedBox(height: 20),
@@ -184,6 +213,8 @@ class _HomePageState extends State<HomePage> {
         final currentUser = authViewModel.currentUser;
         final todaysMeals = homeViewModel.todaysMeals;
         final totalCalories = homeViewModel.totalCalories;
+
+        print('HomePage: Building with ${todaysMeals.length} meals, ${totalCalories} calories');
 
         String getDisplayName() {
           if (currentUser?.displayName != null &&
@@ -247,6 +278,17 @@ class _HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
+                      // Debug button to manually refresh
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.black54),
+                        onPressed: () {
+                          final userId = authViewModel.currentUser?.uid;
+                          if (userId != null) {
+                            print('HomePage: Manual refresh triggered');
+                            homeViewModel.refreshTodaysMeals(userId);
+                          }
+                        },
+                      ),
                       // Notification and settings icons
                       IconButton(
                         icon: const Icon(
@@ -290,6 +332,14 @@ class _HomePageState extends State<HomePage> {
                           color: Color(0xFFE57373),
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
+                        ),
+                      ),
+                      // Debug info
+                      Text(
+                        "Debug: ${todaysMeals.length} meals found",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -391,9 +441,10 @@ class _HomePageState extends State<HomePage> {
                           return GestureDetector(
                             onTap: () {
                               final userId =
-                                  authViewModel.currentUser?.uid ??
-                                  'default_user';
-                              homeViewModel.selectDate(day['fullDate'], userId);
+                                  authViewModel.currentUser?.uid;
+                              if (userId != null) {
+                                homeViewModel.selectDate(day['fullDate'], userId);
+                              }
                             },
                             child: _DayItem(
                               day: day['day'],
@@ -410,37 +461,72 @@ class _HomePageState extends State<HomePage> {
                   child: ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      const Text(
-                        "Today's Meals",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Today's Meals",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${todaysMeals.length} meals',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
-                      ...todaysMeals
-                          .map(
-                            (meal) => _MealCard(
-                              title: meal.name,
-                              items: [meal.description ?? 'No description'],
-                              calories: meal.calories.toInt(),
-                              time: DateFormat('h:mm a').format(meal.timestamp.toLocal()),
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/edit-food',
-                                  arguments: meal,
-                                ).then((_) {
-                                  // Refresh meals when returning from edit
-                                  final userId =
-                                      authViewModel.currentUser?.uid ??
-                                      'default_user';
-                                  homeViewModel.refreshTodaysMeals(userId);
-                                });
-                              },
+                      if (homeViewModel.isBusy)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (todaysMeals.isEmpty)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              'No meals recorded for today.\nTap "Add Meal" to get started!',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                              ),
                             ),
-                          )
-                          .toList(),
+                          ),
+                        )
+                      else
+                        ...todaysMeals
+                            .map(
+                              (meal) => _MealCard(
+                                title: meal.name,
+                                items: [meal.description ?? 'No description'],
+                                calories: meal.calories.toInt(),
+                                time: DateFormat('h:mm a').format(meal.timestamp.toLocal()),
+                                onTap: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/edit-food',
+                                    arguments: meal,
+                                  ).then((_) {
+                                    // Refresh meals when returning from edit
+                                    final userId =
+                                        authViewModel.currentUser?.uid;
+                                    if (userId != null) {
+                                      homeViewModel.refreshTodaysMeals(userId);
+                                    }
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(),
                       _AddMealCard(
                         title: 'Add Meal',
                         subtitle: 'Log your next meal',

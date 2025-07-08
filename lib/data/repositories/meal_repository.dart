@@ -8,9 +8,12 @@ class MealRepository {
   // Create a new meal
   Future<String> createMeal(MealModel meal) async {
     try {
+      print('MealRepository: Creating meal - ${meal.name} for user ${meal.userId}');
       final docRef = await _firestore.collection(_collection).add(meal.toMap());
+      print('MealRepository: Meal created with ID: ${docRef.id}');
       return docRef.id;
     } catch (e) {
+      print('MealRepository: Error creating meal: $e');
       throw Exception('Failed to create meal: $e');
     }
   }
@@ -52,25 +55,38 @@ class MealRepository {
   // Get meals for a specific date
   Future<List<MealModel>> getMealsForDate(String userId, DateTime date) async {
     try {
-      final startOfDay = DateTime(date.year, date.month, date.day);
+      print('MealRepository: Getting meals for user $userId on date $date');
+      
+      // Create start and end of day in UTC to match Firestore timestamps
+      final startOfDay = DateTime.utc(date.year, date.month, date.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
+      
+      print('MealRepository: Querying from $startOfDay to $endOfDay');
 
-      final querySnapshot =
-          await _firestore
-              .collection(_collection)
-              .where('userId', isEqualTo: userId)
-              .where(
-                'timestamp',
-                isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
-              )
-              .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
-              .orderBy('timestamp', descending: false)
-              .get();
+      final querySnapshot = await _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .where(
+            'timestamp',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay),
+          )
+          .where('timestamp', isLessThan: Timestamp.fromDate(endOfDay))
+          .orderBy('timestamp', descending: false)
+          .get();
 
-      return querySnapshot.docs
-          .map((doc) => MealModel.fromFirestore(doc))
+      print('MealRepository: Query returned ${querySnapshot.docs.length} documents');
+
+      final meals = querySnapshot.docs
+          .map((doc) {
+            print('MealRepository: Processing document ${doc.id}');
+            return MealModel.fromFirestore(doc);
+          })
           .toList();
+          
+      print('MealRepository: Converted to ${meals.length} meal objects');
+      return meals;
     } catch (e) {
+      print('MealRepository: Error getting meals for date: $e');
       throw Exception('Failed to get meals for date: $e');
     }
   }
@@ -140,6 +156,8 @@ class MealRepository {
   // Get all meals for a user
   Future<List<MealModel>> getAllMealsForUser(String userId) async {
     try {
+      print('MealRepository: Getting ALL meals for user: $userId');
+      
       final querySnapshot =
           await _firestore
               .collection(_collection)
@@ -147,10 +165,15 @@ class MealRepository {
               .orderBy('timestamp', descending: true)
               .get();
 
-      return querySnapshot.docs
+      print('MealRepository: Found ${querySnapshot.docs.length} total meals for user');
+      
+      final meals = querySnapshot.docs
           .map((doc) => MealModel.fromFirestore(doc))
           .toList();
+          
+      return meals;
     } catch (e) {
+      print('MealRepository: Error getting all meals: $e');
       throw Exception('Failed to get all meals for user: $e');
     }
   }

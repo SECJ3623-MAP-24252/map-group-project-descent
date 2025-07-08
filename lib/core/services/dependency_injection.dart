@@ -1,8 +1,10 @@
 import 'package:get_it/get_it.dart';
-import '../../data/services/firebase_service.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/meal_repository.dart';
 import '../../data/repositories/ai_food_repository.dart';
+import '../../data/services/firebase_service.dart';
+import '../../data/services/ai_food_service.dart';
+import '../../data/services/local_food_database.dart';
 import '../../presentation/viewmodels/auth_viewmodel.dart';
 import '../../presentation/viewmodels/home_viewmodel.dart';
 import '../../presentation/viewmodels/scanner_viewmodel.dart';
@@ -13,9 +15,9 @@ final GetIt getIt = GetIt.instance;
 
 Future<void> setupDependencyInjection() async {
   // Services
-  final firebaseService = FirebaseService();
-  await firebaseService.initialize();
-  getIt.registerSingleton<FirebaseService>(firebaseService);
+  getIt.registerLazySingleton<FirebaseService>(() => FirebaseService());
+  getIt.registerLazySingleton<AIFoodService>(() => AIFoodService());
+  getIt.registerLazySingleton<LocalFoodDatabase>(() => LocalFoodDatabase());
 
   // Repositories
   getIt.registerLazySingleton<UserRepository>(

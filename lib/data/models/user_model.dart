@@ -8,6 +8,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime lastLoginAt;
   final Map<String, dynamic>? preferences;
+  final String? fcmToken; // Added for FCM
 
   UserModel({
     required this.uid,
@@ -17,6 +18,7 @@ class UserModel {
     required this.createdAt,
     required this.lastLoginAt,
     this.preferences,
+    this.fcmToken, // Added for FCM
   });
 
   // Convert UserModel to Map for Firestore
@@ -29,6 +31,7 @@ class UserModel {
       'createdAt': createdAt,
       'lastLoginAt': lastLoginAt,
       'preferences': preferences,
+      'fcmToken': fcmToken, // Added for FCM
     };
   }
 
@@ -43,6 +46,7 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       lastLoginAt: (data['lastLoginAt'] as Timestamp).toDate(),
       preferences: data['preferences'],
+      fcmToken: data['fcmToken'], // Added for FCM
     );
   }
 
@@ -55,6 +59,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastLoginAt,
     Map<String, dynamic>? preferences,
+    String? fcmToken, // Added for FCM
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -64,6 +69,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastLoginAt: lastLoginAt ?? this.lastLoginAt,
       preferences: preferences ?? this.preferences,
+      fcmToken: fcmToken ?? this.fcmToken, // Added for FCM
     );
   }
 }

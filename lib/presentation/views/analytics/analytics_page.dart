@@ -35,22 +35,13 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     try {
       final authViewModel = context.read<AuthViewModel>();
       final userId = authViewModel.currentUser?.uid ?? 'default_user';
-
-      final days =
-          _selectedPeriod == '7 days'
-              ? 7
-              : _selectedPeriod == '30 days'
-              ? 30
-              : 90;
+      
+      final days = _selectedPeriod == '7 days' ? 7 : _selectedPeriod == '30 days' ? 30 : 90;
       final startDate = DateTime.now().subtract(Duration(days: days));
       final endDate = DateTime.now();
-
-      _meals = await _mealRepository.getMealsInDateRange(
-        userId,
-        startDate,
-        endDate,
-      );
-
+      
+      _meals = await _mealRepository.getMealsInDateRange(userId, startDate, endDate);
+      
       setState(() {
         _isLoading = false;
       });
@@ -87,77 +78,71 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
               });
               _loadAnalyticsData();
             },
-            itemBuilder:
-                (context) =>
-                    _periods.map((period) {
-                      return PopupMenuItem(value: period, child: Text(period));
-                    }).toList(),
+            itemBuilder: (context) => _periods.map((period) {
+              return PopupMenuItem(
+                value: period,
+                child: Text(period),
+              );
+            }).toList(),
           ),
         ],
       ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Period selector
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD6F36B).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            color: Colors.black54,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Showing data for last $_selectedPeriod',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Period selector
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6F36B).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 24),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, color: Colors.black54),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Showing data for last $_selectedPeriod',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-                    // Summary cards
-                    _buildSummaryCards(),
-                    const SizedBox(height: 24),
+                  // Summary cards
+                  _buildSummaryCards(),
+                  const SizedBox(height: 24),
 
-                    // Calorie trend chart
-                    _buildCalorieTrendChart(),
-                    const SizedBox(height: 24),
+                  // Calorie trend chart
+                  _buildCalorieTrendChart(),
+                  const SizedBox(height: 24),
 
-                    // Macro breakdown pie chart
-                    _buildMacroBreakdownChart(),
-                    const SizedBox(height: 24),
+                  // Macro breakdown pie chart
+                  _buildMacroBreakdownChart(),
+                  const SizedBox(height: 24),
 
-                    // Meal type distribution
-                    _buildMealTypeDistribution(),
-                    const SizedBox(height: 24),
+                  // Meal type distribution
+                  _buildMealTypeDistribution(),
+                  const SizedBox(height: 24),
 
-                    // Weekly average
-                    _buildWeeklyAverage(),
-                  ],
-                ),
+                  // Weekly average
+                  _buildWeeklyAverage(),
+                ],
               ),
+            ),
     );
   }
 
   Widget _buildSummaryCards() {
-    final totalCalories = _meals.fold<double>(
-      0,
-      (sum, meal) => sum + meal.calories,
-    );
+    final totalCalories = _meals.fold<double>(0, (sum, meal) => sum + meal.calories);
     final avgCalories = _meals.isEmpty ? 0 : totalCalories / _getDaysInPeriod();
     final totalMeals = _meals.length;
     final avgMeals = _meals.isEmpty ? 0 : totalMeals / _getDaysInPeriod();
@@ -187,13 +172,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     );
   }
 
-  Widget _buildSummaryCard(
-    String title,
-    String value,
-    String unit,
-    Color color,
-    IconData icon,
-  ) {
+  Widget _buildSummaryCard(String title, String value, String unit, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -235,7 +214,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Text(
                   unit,
-                  style: const TextStyle(fontSize: 14, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                  ),
                 ),
               ),
             ],
@@ -258,7 +240,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         children: [
           const Text(
             'Calorie Intake Trend',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -283,9 +268,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        final date = DateTime.now().subtract(
-                          Duration(days: _getDaysInPeriod() - value.toInt()),
-                        );
+                        final date = DateTime.now().subtract(Duration(days: _getDaysInPeriod() - value.toInt()));
                         return Text(
                           DateFormat('M/d').format(date),
                           style: const TextStyle(fontSize: 12),
@@ -293,12 +276,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       },
                     ),
                   ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
@@ -323,10 +302,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildMacroBreakdownChart() {
-    final totalProtein = _meals.fold<double>(
-      0,
-      (sum, meal) => sum + meal.protein,
-    );
+    final totalProtein = _meals.fold<double>(0, (sum, meal) => sum + meal.protein);
     final totalCarbs = _meals.fold<double>(0, (sum, meal) => sum + meal.carbs);
     final totalFat = _meals.fold<double>(0, (sum, meal) => sum + meal.fat);
     final total = totalProtein + totalCarbs + totalFat;
@@ -360,7 +336,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         children: [
           const Text(
             'Macro Breakdown',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -401,23 +380,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildLegendItem(
-                      'Protein',
-                      '${totalProtein.round()}g',
-                      Colors.red,
-                    ),
+                    _buildLegendItem('Protein', '${totalProtein.round()}g', Colors.red),
                     const SizedBox(height: 8),
-                    _buildLegendItem(
-                      'Carbs',
-                      '${totalCarbs.round()}g',
-                      Colors.green,
-                    ),
+                    _buildLegendItem('Carbs', '${totalCarbs.round()}g', Colors.green),
                     const SizedBox(height: 8),
-                    _buildLegendItem(
-                      'Fat',
-                      '${totalFat.round()}g',
-                      Colors.purple,
-                    ),
+                    _buildLegendItem('Fat', '${totalFat.round()}g', Colors.purple),
                   ],
                 ),
               ),
@@ -446,13 +413,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         children: [
           const Text(
             'Meal Distribution',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           ...mealTypeCounts.entries.map((entry) {
-            final percentage =
-                (_meals.isEmpty ? 0 : (entry.value / _meals.length) * 100)
-                    .round();
+            final percentage = (_meals.isEmpty ? 0 : (entry.value / _meals.length) * 100).round();
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
@@ -486,9 +454,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   }
 
   Widget _buildWeeklyAverage() {
-    final weeklyCalories =
-        _meals.fold<double>(0, (sum, meal) => sum + meal.calories) /
-        (_getDaysInPeriod() / 7);
+    final weeklyCalories = _meals.fold<double>(0, (sum, meal) => sum + meal.calories) / (_getDaysInPeriod() / 7);
     final weeklyMeals = _meals.length / (_getDaysInPeriod() / 7);
 
     return Container(
@@ -503,7 +469,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         children: [
           const Text(
             'Weekly Averages',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -566,7 +535,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
         ),
-        Text(value, style: const TextStyle(color: Colors.black54)),
+        Text(
+          value,
+          style: const TextStyle(color: Colors.black54),
+        ),
       ],
     );
   }
@@ -574,22 +546,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   List<FlSpot> _getCalorieSpots() {
     final dailyCalories = <int, double>{};
     final days = _getDaysInPeriod();
-
+    
     // Initialize all days with 0 calories
     for (int i = 0; i < days; i++) {
       dailyCalories[i] = 0;
     }
-
+    
     // Calculate calories for each day
     for (final meal in _meals) {
       final daysDiff = DateTime.now().difference(meal.timestamp).inDays;
       final dayIndex = days - daysDiff - 1;
       if (dayIndex >= 0 && dayIndex < days) {
-        dailyCalories[dayIndex] =
-            (dailyCalories[dayIndex] ?? 0) + meal.calories;
+        dailyCalories[dayIndex] = (dailyCalories[dayIndex] ?? 0) + meal.calories;
       }
     }
-
+    
     return dailyCalories.entries
         .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
         .toList();

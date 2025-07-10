@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+
 import 'package:provider/provider.dart';
 import '../../viewmodels/scanner_viewmodel.dart';
 import 'food_scan_results_page.dart';
 
 class FoodScannerPage extends StatefulWidget {
-  const FoodScannerPage({Key? key}) : super(key: key);
+  const FoodScannerPage({super.key});
 
   @override
   State<FoodScannerPage> createState() => _FoodScannerPageState();

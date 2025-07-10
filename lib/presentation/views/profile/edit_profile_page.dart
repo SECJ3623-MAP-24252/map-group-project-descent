@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../../viewmodels/profile_viewmodel.dart';
+import '../../widgets/common/custom_text_field.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -15,24 +16,26 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _displayNameController = TextEditingController();
+  final _calorieGoalController = TextEditingController();
+  final _emailController = TextEditingController();
   final _imagePicker = ImagePicker();
   File? _selectedImage;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final profileViewModel = context.read<ProfileViewModel>();
-      profileViewModel.loadUserData();
-      if (profileViewModel.userData != null) {
-        _displayNameController.text = profileViewModel.userData!.displayName ?? '';
-      }
-    });
+    final profileViewModel = context.read<ProfileViewModel>();
+    _displayNameController.text = profileViewModel.userData?.displayName ?? '';
+    _calorieGoalController.text =
+        profileViewModel.userData?.calorieGoal?.toString() ?? '';
+    _emailController.text = profileViewModel.userData?.email ?? '';
   }
 
   @override
   void dispose() {
     _displayNameController.dispose();
+    _calorieGoalController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
@@ -59,10 +62,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 await _getImage(ImageSource.gallery);
               },
             ),
-            if (_selectedImage != null || context.read<ProfileViewModel>().userData?.photoURL != null)
+            if (_selectedImage != null ||
+                context.read<ProfileViewModel>().userData?.photoURL != null)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Remove Photo', style: TextStyle(color: Colors.red)),
+                title: const Text('Remove Photo',
+                    style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() {
@@ -105,7 +110,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget _buildProfileImage() {
     final profileViewModel = context.read<ProfileViewModel>();
     final userData = profileViewModel.userData;
-    
+
     if (_selectedImage != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(60),
@@ -116,7 +121,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
           fit: BoxFit.cover,
         ),
       );
-    } else if (userData?.photoURL != null && userData!.photoURL!.startsWith('data:image')) {
+    } else if (userData?.photoURL != null &&
+        userData!.photoURL!.startsWith('data:image')) {
       try {
         final base64String = userData.photoURL!.split(',')[1];
         final bytes = base64Decode(base64String);
@@ -132,7 +138,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       } catch (e) {
         print('Error decoding base64 image: $e');
       }
-    } else if (userData?.photoURL != null && userData!.photoURL!.startsWith('http')) {
+    } else if (userData?.photoURL != null &&
+        userData!.photoURL!.startsWith('http')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(60),
         child: Image.network(
@@ -150,7 +157,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       );
     }
-    
+
     return const Icon(
       Icons.person,
       size: 60,
@@ -162,11 +169,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!_formKey.currentState!.validate()) return;
 
     final profileViewModel = context.read<ProfileViewModel>();
-    
+
     try {
       await profileViewModel.updateProfile(
         displayName: _displayNameController.text.trim(),
         imageFile: _selectedImage,
+        calorieGoal: int.tryParse(_calorieGoalController.text.trim()),
       );
 
       if (mounted) {
@@ -194,8 +202,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Consumer<ProfileViewModel>(
       builder: (context, profileViewModel, child) {
-        final userData = profileViewModel.userData;
-        
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: AppBar(
@@ -220,7 +226,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 child: Text(
                   'Save',
                   style: TextStyle(
-                    color: profileViewModel.isBusy ? Colors.grey : Colors.green,
+                    color:
+                        profileViewModel.isBusy ? Colors.grey : Colors.green,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -253,7 +260,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFFF7A4D),
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white, width: 3),
+                                    border: Border.all(
+                                        color: Colors.white, width: 3),
                                   ),
                                   child: const Icon(
                                     Icons.camera_alt,
@@ -269,27 +277,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         const SizedBox(height: 32),
 
                         // Display Name Field
-                        TextFormField(
+                        CustomTextField(
+                          label: 'Display Name',
                           controller: _displayNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Display Name',
-                            hintText: 'Enter your display name',
-                            prefixIcon: const Icon(Icons.person_outline),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFD6F36B),
-                                width: 2,
-                              ),
-                            ),
-                          ),
+                          prefixIcon: Icons.person_outline,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter a display name';
@@ -300,21 +291,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
                         const SizedBox(height: 24),
 
+                        // Calorie Goal Field
+                        CustomTextField(
+                          label: 'Calorie Goal',
+                          controller: _calorieGoalController,
+                          keyboardType: TextInputType.number,
+                          prefixIcon: Icons.local_fire_department_outlined,
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              final number = int.tryParse(value);
+                              if (number == null) {
+                                return 'Please enter a valid number';
+                              }
+                              if (number < 0) {
+                                return 'Calorie goal cannot be negative';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 24),
+
                         // Email Field (Read-only)
-                        TextFormField(
-                          initialValue: userData?.email,
+                        CustomTextField(
+                          label: 'Email',
+                          controller: _emailController,
                           enabled: false,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            prefixIcon: const Icon(Icons.email_outlined),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            disabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide(color: Colors.grey[300]!),
-                            ),
-                          ),
+                          prefixIcon: Icons.email_outlined,
                         ),
                       ],
                     ),

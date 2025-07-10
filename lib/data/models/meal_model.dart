@@ -96,9 +96,6 @@ class MealModel {
   factory MealModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     
-    print('MealModel.fromFirestore: Processing document ${doc.id}');
-    print('MealModel.fromFirestore: Document data: $data');
-    
     List<IngredientModel>? ingredientsList;
     if (data['ingredients'] != null) {
       ingredientsList = (data['ingredients'] as List)
@@ -125,8 +122,6 @@ class MealModel {
       ingredients: ingredientsList,
       scanSource: data['scanSource'],
     );
-    
-    print('MealModel.fromFirestore: Created meal - ${meal.name}, timestamp: ${meal.timestamp}, userId: ${meal.userId}');
     
     return meal;
   }

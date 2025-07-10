@@ -53,8 +53,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           height: 80,
                           decoration: BoxDecoration(
                             color: _emailSent
-                                ? Colors.green.withOpacity(0.1)
-                                : const Color(0xFFD6F36B).withOpacity(0.2),
+                                ? Colors.green.withAlpha(25)
+                                : const Color(0xFFD6F36B).withAlpha(51),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Icon(
@@ -118,7 +118,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
+                                color: Colors.red.withAlpha(25),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
@@ -135,9 +135,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withAlpha(25),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        border: Border.all(color: Colors.green.withAlpha(76)),
                       ),
                       child: Column(
                         children: [

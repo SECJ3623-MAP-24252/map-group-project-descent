@@ -76,8 +76,8 @@ class _ProfilePageState extends State<ProfilePage> {
         final userStats = profileViewModel.userStats;
 
         String getDisplayName() {
-          if (userData?.displayName != null && userData!.displayName!.isNotEmpty) {
-            return userData!.displayName!;
+          if (userData != null && userData.displayName != null && userData.displayName!.isNotEmpty) {
+            return userData.displayName!;
           }
           return "User";
         }
@@ -197,6 +197,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                     value: userStats['foodsScanned']?.toString() ?? '0',
                                     icon: Icons.camera_alt,
                                   ),
+                                  const SizedBox(
+                                    width: 1,
+                                    height: 40,
+                                    child: ColoredBox(color: Colors.grey),
+                                  ),
+                                  _StatItem(
+                                    label: 'Calorie Goal',
+                                    value: userData?.calorieGoal?.toString() ?? 'N/A',
+                                    icon: Icons.local_fire_department_outlined,
+                                  ),
                                 ],
                               ),
                             ),
@@ -247,6 +257,17 @@ class _ProfilePageState extends State<ProfilePage> {
                               title: 'Sign Out',
                               subtitle: 'Log out of your account',
                               onTap: () => _showSignOutDialog(authViewModel),
+                            ),
+                            _ProfileMenuItem(
+                              icon: Icons.analytics,
+                              title: 'Recalculate Analytics',
+                              subtitle: 'Update your analytics data',
+                              onTap: () async {
+                                await profileViewModel.recalculateAnalytics();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Analytics recalculated!')),
+                                );
+                              },
                             ),
                           ],
                         ),

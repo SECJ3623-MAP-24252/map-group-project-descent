@@ -3,14 +3,12 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
-import '../services/firebase_service.dart';
 
 class UserRepository {
-  final FirebaseService _firebaseService;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  UserRepository(this._firebaseService);
+  UserRepository();
 
   // Authentication methods
   Future<UserModel?> signInWithEmail(String email, String password) async {
@@ -96,10 +94,12 @@ class UserRepository {
     String? displayName,
     String? photoURL,
     File? imageFile,
+    int? calorieGoal,
   }) async {
     try {
       final updates = <String, dynamic>{};
       if (displayName != null) updates['displayName'] = displayName;
+      if (calorieGoal != null) updates['calorieGoal'] = calorieGoal;
 
       // Convert image to base64 if provided
       if (imageFile != null) {

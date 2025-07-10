@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../presentation/views/auth/login_page.dart';
 import '../presentation/views/auth/register_page.dart';
 import '../presentation/views/auth/forgot_password_page.dart';
-import '../presentation/views/home/home_page.dart';
+import '../presentation/views/main_screen.dart'; // Import MainScreen
 import '../presentation/views/profile/profile_page.dart';
 import '../presentation/views/profile/edit_profile_page.dart';
 import '../presentation/views/nutrition/daily_nutrition_page.dart';
@@ -23,7 +23,7 @@ class AppRoutes {
       case '/forgot-password':
         return MaterialPageRoute(builder: (_) => const ForgotPasswordPage());
       case '/home':
-        return MaterialPageRoute(builder: (_) => const HomePage());
+        return MaterialPageRoute(builder: (_) => const MainScreen()); // Changed to MainScreen
       case '/profile':
         return MaterialPageRoute(builder: (_) => const ProfilePage());
       case '/edit-profile':

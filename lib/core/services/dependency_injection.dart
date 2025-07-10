@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import '../../data/repositories/analytics_repository.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/meal_repository.dart';
 import '../../data/repositories/ai_food_repository.dart';
@@ -21,24 +22,17 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<LocalFoodDatabase>(() => LocalFoodDatabase());
 
   // Repositories
-  getIt.registerLazySingleton<UserRepository>(
-    () => UserRepository(getIt<FirebaseService>()),
-  );
+  getIt.registerLazySingleton<UserRepository>(() => UserRepository());
   getIt.registerLazySingleton<MealRepository>(() => MealRepository());
   getIt.registerLazySingleton<AIFoodRepository>(() => AIFoodRepository());
-  getIt.registerLazySingleton<NotificationRepository>(
-    () => NotificationRepository(
-      getIt<FirebaseService>(),
-      getIt<NotificationService>(),
-    ),
-  );
+  getIt.registerLazySingleton<AnalyticsRepository>(() => AnalyticsRepository());
 
   // ViewModels
   getIt.registerFactory<AuthViewModel>(
     () => AuthViewModel(getIt<UserRepository>()),
   );
   getIt.registerFactory<HomeViewModel>(
-    () => HomeViewModel(getIt<MealRepository>()),
+    () => HomeViewModel(getIt<MealRepository>(), getIt<UserRepository>()),
   );
   getIt.registerFactory<ScannerViewModel>(
     () => ScannerViewModel(getIt<AIFoodRepository>(), getIt<MealRepository>()),

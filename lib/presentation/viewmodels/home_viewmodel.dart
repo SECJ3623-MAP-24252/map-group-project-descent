@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+
+import '../../data/models/user_model.dart';
+import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/meal_repository.dart';
 import '../../data/models/meal_model.dart';
 import '../../core/constants/app_constants.dart';
@@ -6,11 +8,14 @@ import 'base_viewmodel.dart';
 
 class HomeViewModel extends BaseViewModel {
   final MealRepository _mealRepository;
+  final UserRepository _userRepository;
   
+  UserModel? _user;
   List<MealModel> _todaysMeals = [];
   Map<String, double> _todaysNutrition = {};
   DateTime _selectedDate = DateTime.now();
   
+  UserModel? get user => _user;
   List<MealModel> get todaysMeals => _todaysMeals;
   Map<String, double> get todaysNutrition => _todaysNutrition;
   DateTime get selectedDate => _selectedDate;
@@ -20,7 +25,25 @@ class HomeViewModel extends BaseViewModel {
   double get carbsGrams => _todaysNutrition['carbs'] ?? 0;
   double get fatGrams => _todaysNutrition['fat'] ?? 0;
 
-  HomeViewModel(this._mealRepository);
+  HomeViewModel(this._mealRepository, this._userRepository);
+
+  Future<void> loadInitialData(String userId) async {
+    setState(ViewState.busy);
+    await Future.wait([
+      loadTodaysMeals(userId),
+      loadUserData(userId),
+    ]);
+    setState(ViewState.idle);
+  }
+
+  Future<void> loadUserData(String userId) async {
+    try {
+      _user = await _userRepository.getUserData(userId);
+      notifyListeners();
+    } catch (e) {
+      setError(e.toString());
+    }
+  }
 
   Future<void> loadTodaysMeals([String? userId]) async {
     if (userId == null) {
@@ -117,7 +140,9 @@ class HomeViewModel extends BaseViewModel {
   }
 
   double getCalorieProgress() {
-    return (totalCalories / AppConstants.dailyCalorieGoal).clamp(0.0, 1.0);
+    final goal = _user?.calorieGoal ?? AppConstants.dailyCalorieGoal;
+    if (goal == 0) return 0.0;
+    return (totalCalories / goal).clamp(0.0, 1.0);
   }
 
   List<Map<String, dynamic>> getWeekDays() {

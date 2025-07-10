@@ -11,6 +11,7 @@ import '../../presentation/viewmodels/home_viewmodel.dart';
 import '../../presentation/viewmodels/scanner_viewmodel.dart';
 import '../../presentation/viewmodels/nutrition_viewmodel.dart';
 import '../../presentation/viewmodels/profile_viewmodel.dart';
+import '../../presentation/viewmodels/notification_viewmodel.dart';
 
 final GetIt getIt = GetIt.instance;
 

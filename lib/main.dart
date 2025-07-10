@@ -10,6 +10,7 @@ import 'presentation/viewmodels/nutrition_viewmodel.dart';
 import 'presentation/viewmodels/profile_viewmodel.dart';
 import 'app/routes.dart';
 import 'presentation/views/splash_screen.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 // Top-level function to handle background messages
 @pragma('vm:entry-point')
@@ -21,6 +22,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   await Firebase.initializeApp();
 
   // Initialize Firebase Messaging

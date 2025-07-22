@@ -1,22 +1,26 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/models/user_model.dart';
 import '../../core/utils/validators.dart';
 import 'base_viewmodel.dart';
 
+/// This class is a view model for the authentication feature.
 class AuthViewModel extends BaseViewModel {
   final UserRepository _userRepository;
 
   UserModel? _currentUser;
+  /// The currently logged in user.
   UserModel? get currentUser => _currentUser;
 
+  /// Whether the user is logged in.
   bool get isLoggedIn => _currentUser != null;
 
+  /// Creates a new instance of the [AuthViewModel] class.
   AuthViewModel(this._userRepository) {
     _listenToAuthChanges();
   }
 
+  /// Listens to the authentication state changes.
   void _listenToAuthChanges() {
     _userRepository.authStateChanges.listen((user) async {
       if (user != null) {
@@ -45,6 +49,9 @@ class AuthViewModel extends BaseViewModel {
     });
   }
 
+  /// Checks the authentication state of the user.
+  ///
+  /// Returns true if the user is logged in, otherwise returns false.
   Future<bool> checkAuthState() async {
     try {
       final user = _userRepository.currentUser;
@@ -61,6 +68,12 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
+  /// Signs in a user with the given email and password.
+  ///
+  /// The [email] is the user's email address.
+  /// The [password] is the user's password.
+  ///
+  /// Returns true if the sign-in is successful, otherwise returns false.
   Future<bool> signIn(String email, String password) async {
     setState(ViewState.busy);
 
@@ -80,6 +93,13 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
+  /// Registers a new user with the given email, password, and display name.
+  ///
+  /// The [email] is the user's email address.
+  /// The [password] is the user's password.
+  /// The [displayName] is the user's display name.
+  ///
+  /// Returns true if the registration is successful, otherwise returns false.
   Future<bool> register(
     String email,
     String password,
@@ -107,6 +127,7 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
+  /// Signs out the current user.
   Future<void> signOut() async {
     setState(ViewState.busy);
 
@@ -119,6 +140,11 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
+  /// Sends a password reset email to the given email address.
+  ///
+  /// The [email] is the user's email address.
+  ///
+  /// Returns true if the password reset email is sent successfully, otherwise returns false.
   Future<bool> resetPassword(String email) async {
     setState(ViewState.busy);
 
@@ -132,7 +158,7 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
-  // Method to refresh user data manually
+  /// Method to refresh user data manually
   Future<void> refreshUserData() async {
     try {
       final user = _userRepository.currentUser;
@@ -145,6 +171,11 @@ class AuthViewModel extends BaseViewModel {
     }
   }
 
+  /// Gets the error message from a [FirebaseAuthException].
+  ///
+  /// The [error] is the exception.
+  ///
+  /// Returns the error message.
   String _getErrorMessage(dynamic error) {
     if (error is FirebaseAuthException) {
       switch (error.code) {
@@ -170,9 +201,12 @@ class AuthViewModel extends BaseViewModel {
   }
 
   // Form validation
+  /// Validates an email address.
   String? validateEmail(String? email) => Validators.validateEmail(email);
+  /// Validates a password.
   String? validatePassword(String? password) =>
       Validators.validatePassword(password);
+  /// Validates a display name.
   String? validateDisplayName(String? name) =>
       Validators.validateDisplayName(name);
 }

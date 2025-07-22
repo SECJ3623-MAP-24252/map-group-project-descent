@@ -2,10 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/meal_model.dart';
 import '../models/user_analytics_model.dart';
 
+/// This class is a repository for the user analytics feature.
 class AnalyticsRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'user_analytics';
 
+  /// Gets the analytics for a user.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  ///
+  /// Returns a [UserAnalyticsModel] object, or null if the user has no analytics.
   Future<UserAnalyticsModel?> getAnalytics(String userId) async {
     try {
       final doc = await _firestore.collection(_collection).doc(userId).get();
@@ -19,6 +25,9 @@ class AnalyticsRepository {
     }
   }
 
+  /// Updates the analytics with a new meal.
+  ///
+  /// The [meal] is the new meal to be added.
   Future<void> updateAnalyticsWithNewMeal(MealModel meal) async {
     final docRef = _firestore.collection(_collection).doc(meal.userId);
 
@@ -53,6 +62,9 @@ class AnalyticsRepository {
     });
   }
 
+  /// Updates the analytics with a deleted meal.
+  ///
+  /// The [meal] is the meal to be deleted.
   Future<void> updateAnalyticsWithDeletedMeal(MealModel meal) async {
     final docRef = _firestore.collection(_collection).doc(meal.userId);
 
@@ -74,6 +86,10 @@ class AnalyticsRepository {
     });
   }
 
+  /// Updates the analytics with an updated meal.
+  ///
+  /// The [oldMeal] is the old meal data.
+  /// The [newMeal] is the new meal data.
   Future<void> updateAnalyticsWithUpdatedMeal(
       MealModel oldMeal, MealModel newMeal) async {
     final docRef = _firestore.collection(_collection).doc(newMeal.userId);
@@ -98,6 +114,9 @@ class AnalyticsRepository {
     });
   }
 
+  /// Recalculates the analytics for a user.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> recalculateAnalytics(String userId) async {
     final mealsSnapshot = await _firestore
         .collection('meals')

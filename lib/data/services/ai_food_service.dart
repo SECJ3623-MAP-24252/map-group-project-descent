@@ -4,8 +4,13 @@ import 'package:http/http.dart' as http;
 import 'api_config.dart';
 import 'local_food_database.dart';
 
+/// This class is a service for the AI food analysis feature.
 class AIFoodService {
   /// Main method to analyze food image using Gemini + CalorieNinjas
+  ///
+  /// The [imageFile] is the image of the food to be analyzed.
+  ///
+  /// Returns a [Map] containing the nutritional information of the food.
   static Future<Map<String, dynamic>> analyzeFoodImage(File imageFile) async {
     try {
       // Step 1: Use Gemini to analyze the image and extract meal name, description, and ingredients
@@ -55,6 +60,10 @@ class AIFoodService {
   }
 
   /// Analyze food image using Gemini 1.5 Flash API
+  ///
+  /// The [imageFile] is the image of the food to be analyzed.
+  ///
+  /// Returns a [Map] containing the meal name, description, and ingredients string.
   static Future<Map<String, String>?> _analyzeImageWithGemini(
     File imageFile,
   ) async {
@@ -202,6 +211,10 @@ class AIFoodService {
   }
 
   /// Get nutrition data from CalorieNinjas API
+  ///
+  /// The [ingredientsString] is a comma-separated string of ingredients.
+  ///
+  /// Returns a [Map] containing the nutritional information of the ingredients.
   static Future<Map<String, dynamic>?> _getNutritionFromCalorieNinjas(
     String ingredientsString,
   ) async {
@@ -257,6 +270,11 @@ class AIFoodService {
   }
 
   /// Process CalorieNinjas API response and combine nutrition data
+  ///
+  /// The [items] is a list of ingredients from the CalorieNinjas API response.
+  /// The [originalQuery] is the original query sent to the CalorieNinjas API.
+  ///
+  /// Returns a [Map] containing the combined nutritional information of the ingredients.
   static Map<String, dynamic> _processCalorieNinjasResponse(
     List items,
     String originalQuery,
@@ -347,6 +365,10 @@ class AIFoodService {
   }
 
   /// Try to get nutrition from local database as fallback
+  ///
+  /// The [ingredientsString] is a comma-separated string of ingredients.
+  ///
+  /// Returns a [Map] containing the nutritional information of the first ingredient, or null if the ingredient is not found.
   static Map<String, dynamic>? _tryLocalDatabase(String ingredientsString) {
     try {
       print('Trying local database with: $ingredientsString');
@@ -393,6 +415,10 @@ class AIFoodService {
   }
 
   /// Safely parse a value to double
+  ///
+  /// The [value] is the value to be parsed.
+  ///
+  /// Returns the parsed double, or 0.0 if the value is null or cannot be parsed.
   static double _parseDouble(dynamic value) {
     if (value == null) return 0.0;
     if (value is double) return value;
@@ -404,6 +430,10 @@ class AIFoodService {
   }
 
   /// Clean and standardize food names
+  ///
+  /// The [rawName] is the raw food name to be cleaned.
+  ///
+  /// Returns the cleaned food name.
   static String _cleanFoodName(String rawName) {
     if (rawName.isEmpty) return 'Unknown Food';
 
@@ -419,6 +449,8 @@ class AIFoodService {
   }
 
   /// Default nutrition values when all services fail
+  ///
+  /// Returns a [Map] containing the default nutritional information.
   static Map<String, dynamic> _getDefaultNutrition() {
     return {
       'calories': 150,
@@ -432,6 +464,8 @@ class AIFoodService {
   }
 
   /// Default response when all AI services fail
+  ///
+  /// Returns a [Map] containing the default response.
   static Map<String, dynamic> _getDefaultResponse() {
     return {
       'food_name': 'Unknown Food Item',

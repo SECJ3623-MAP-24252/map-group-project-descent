@@ -1,13 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Represents a single ingredient in a meal.
 class IngredientModel {
+  /// The name of the ingredient.
   final String name;
+  /// The weight of the ingredient.
   final String weight;
+  /// The number of calories in the ingredient.
   final int calories;
+  /// The amount of protein in the ingredient.
   final double? protein;
+  /// The amount of carbohydrates in the ingredient.
   final double? carbs;
+  /// The amount of fat in the ingredient.
   final double? fat;
 
+  /// Creates a new instance of the [IngredientModel] class.
   IngredientModel({
     required this.name,
     required this.weight,
@@ -17,6 +25,7 @@ class IngredientModel {
     this.fat,
   });
 
+  /// Converts this [IngredientModel] to a [Map].
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -28,6 +37,7 @@ class IngredientModel {
     };
   }
 
+  /// Creates a new instance of the [IngredientModel] class from a [Map].
   factory IngredientModel.fromMap(Map<String, dynamic> map) {
     return IngredientModel(
       name: map['name'] ?? '',
@@ -40,22 +50,38 @@ class IngredientModel {
   }
 }
 
+/// Represents a meal.
 class MealModel {
+  /// The unique identifier of the meal.
   final String id;
+  /// The unique identifier of the user who created the meal.
   final String userId;
+  /// The name of the meal.
   final String name;
+  /// A description of the meal.
   final String? description;
+  /// The number of calories in the meal.
   final double calories;
+  /// The amount of protein in the meal.
   final double protein;
+  /// The amount of carbohydrates in the meal.
   final double carbs;
+  /// The amount of fat in the meal.
   final double fat;
+  /// The date and time the meal was created.
   final DateTime timestamp;
+  /// The URL of an image of the meal.
   final String? imageUrl; // Now stores base64 image data
+  /// The type of meal (e.g., breakfast, lunch, dinner, snack).
   final String mealType; // breakfast, lunch, dinner, snack
+  /// A map of additional nutrients in the meal.
   final Map<String, dynamic>? additionalNutrients;
+  /// A list of ingredients in the meal.
   final List<IngredientModel>? ingredients; // Store individual ingredients
+  /// The source of the meal data (e.g., 'ai_scan', 'manual').
   final String? scanSource; // 'ai_scan', 'manual', etc.
 
+  /// Creates a new instance of the [MealModel] class.
   MealModel({
     required this.id,
     required this.userId,
@@ -73,7 +99,7 @@ class MealModel {
     this.scanSource,
   });
 
-  // Convert MealModel to Map for Firestore
+  /// Converts this [MealModel] to a [Map] for Firestore.
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
@@ -92,7 +118,7 @@ class MealModel {
     };
   }
 
-  // Create MealModel from Firestore document
+  /// Creates a new instance of the [MealModel] class from a Firestore document.
   factory MealModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     
@@ -126,7 +152,7 @@ class MealModel {
     return meal;
   }
 
-  // Create a copy of MealModel with updated fields
+  /// Creates a copy of this [MealModel] with the given fields updated.
   MealModel copyWith({
     String? id,
     String? userId,

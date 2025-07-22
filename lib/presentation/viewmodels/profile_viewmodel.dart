@@ -6,17 +6,22 @@ import '../../data/models/user_model.dart';
 import '../../data/repositories/analytics_repository.dart';
 import 'base_viewmodel.dart';
 
+/// This class is a view model for the profile screen.
 class ProfileViewModel extends BaseViewModel {
   final UserRepository _userRepository;
 
   UserModel? _userData;
   Map<String, int> _userStats = {};
 
+  /// The user data.
   UserModel? get userData => _userData;
+  /// The user stats.
   Map<String, int> get userStats => _userStats;
 
+  /// Creates a new instance of the [ProfileViewModel] class.
   ProfileViewModel(this._userRepository);
 
+  /// Loads the user data.
   Future<void> loadUserData() async {
     setState(ViewState.busy);
 
@@ -32,6 +37,7 @@ class ProfileViewModel extends BaseViewModel {
     }
   }
 
+  /// Loads the user stats.
   Future<void> loadUserStats() async {
     try {
       final currentUser = _userRepository.currentUser;
@@ -88,6 +94,11 @@ class ProfileViewModel extends BaseViewModel {
     }
   }
 
+  /// Updates the user's profile.
+  ///
+  /// The [displayName] is the user's new display name.
+  /// The [imageFile] is the user's new profile image.
+  /// The [calorieGoal] is the user's new daily calorie goal.
   Future<void> updateProfile(
       {String? displayName,
       File? imageFile,
@@ -112,6 +123,7 @@ class ProfileViewModel extends BaseViewModel {
     }
   }
 
+  /// Signs out the current user.
   Future<void> signOut() async {
     setState(ViewState.busy);
 
@@ -125,6 +137,7 @@ class ProfileViewModel extends BaseViewModel {
     }
   }
 
+  /// Gets the user's display name.
   String getDisplayName() {
     if (_userData?.displayName != null && _userData!.displayName!.isNotEmpty) {
       return _userData!.displayName!;
@@ -132,10 +145,12 @@ class ProfileViewModel extends BaseViewModel {
     return "User";
   }
 
+  /// Gets the user's email address.
   String getEmail() {
     return _userData?.email ?? "No email";
   }
 
+  /// Recalculates the user's analytics.
   Future<void> recalculateAnalytics() async {
     setState(ViewState.busy);
     try {

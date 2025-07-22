@@ -2,12 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import './analytics_repository.dart';
 import '../models/meal_model.dart';
 
+/// This class is a repository for the meal feature.
 class MealRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AnalyticsRepository _analyticsRepository = AnalyticsRepository();
   final String _collection = 'meals';
 
-  // Create a new meal
+  /// Creates a new meal.
+  ///
+  /// The [meal] is the meal to be created.
+  ///
+  /// Returns the unique identifier of the created meal.
   Future<String> createMeal(MealModel meal) async {
     try {
       final docRef = await _firestore.collection(_collection).add(meal.toMap());
@@ -18,7 +23,11 @@ class MealRepository {
     }
   }
 
-  // Get meal by ID
+  /// Gets a meal by its unique identifier.
+  ///
+  /// The [mealId] is the unique identifier of the meal.
+  ///
+  /// Returns a [MealModel] object, or null if the meal is not found.
   Future<MealModel?> getMealById(String mealId) async {
     try {
       final doc = await _firestore.collection(_collection).doc(mealId).get();
@@ -31,7 +40,9 @@ class MealRepository {
     }
   }
 
-  // Update an existing meal
+  /// Updates an existing meal.
+  ///
+  /// The [meal] is the meal to be updated.
   Future<void> updateMeal(MealModel meal) async {
     try {
       final oldMeal = await getMealById(meal.id);
@@ -48,7 +59,9 @@ class MealRepository {
     }
   }
 
-  // Delete a meal
+  /// Deletes a meal.
+  ///
+  /// The [mealId] is the unique identifier of the meal to be deleted.
   Future<void> deleteMeal(String mealId) async {
     try {
       final meal = await getMealById(mealId);
@@ -61,7 +74,12 @@ class MealRepository {
     }
   }
 
-  // Get meals for a specific date
+  /// Gets the meals for a specific date.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  /// The [date] is the date for which to get the meals.
+  ///
+  /// Returns a list of [MealModel] objects.
   Future<List<MealModel>> getMealsForDate(String userId, DateTime date) async {
     try {
       // Create start and end of day in UTC to match Firestore timestamps
@@ -88,7 +106,13 @@ class MealRepository {
     }
   }
 
-  // Get meals in a date range
+  /// Gets the meals in a date range.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  /// The [startDate] is the start of the date range.
+  /// The [endDate] is the end of the date range.
+  ///
+  /// Returns a list of [MealModel] objects.
   Future<List<MealModel>> getMealsInDateRange(
     String userId,
     DateTime startDate,
@@ -117,7 +141,13 @@ class MealRepository {
     }
   }
 
-  // Get nutrition summary for a date range
+  /// Gets the nutrition summary for a date range.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  /// The [startDate] is the start of the date range.
+  /// The [endDate] is the end of the date range.
+  ///
+  /// Returns a map of the nutrition summary.
   Future<Map<String, double>> getNutritionSummary(
     String userId,
     DateTime startDate,
@@ -149,7 +179,11 @@ class MealRepository {
     }
   }
 
-  // Get all meals for a user
+  /// Gets all the meals for a user.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  ///
+  /// Returns a list of [MealModel] objects.
   Future<List<MealModel>> getAllMealsForUser(String userId) async {
     try {
       final querySnapshot = await _firestore
@@ -167,7 +201,12 @@ class MealRepository {
     }
   }
 
-  // Get meals by meal type
+  /// Gets the meals by meal type.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  /// The [mealType] is the type of the meal.
+  ///
+  /// Returns a list of [MealModel] objects.
   Future<List<MealModel>> getMealsByType(String userId, String mealType) async {
     try {
       final querySnapshot = await _firestore
@@ -185,7 +224,12 @@ class MealRepository {
     }
   }
 
-  // Search meals by name
+  /// Searches for meals by name.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  /// The [searchTerm] is the search term.
+  ///
+  /// Returns a list of [MealModel] objects.
   Future<List<MealModel>> searchMealsByName(
     String userId,
     String searchTerm,

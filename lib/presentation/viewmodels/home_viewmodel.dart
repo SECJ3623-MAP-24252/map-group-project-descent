@@ -1,4 +1,3 @@
-
 import '../../data/models/user_model.dart';
 import '../../data/repositories/user_repository.dart';
 import '../../data/repositories/meal_repository.dart';
@@ -6,6 +5,7 @@ import '../../data/models/meal_model.dart';
 import '../../core/constants/app_constants.dart';
 import 'base_viewmodel.dart';
 
+/// This class is a view model for the home screen.
 class HomeViewModel extends BaseViewModel {
   final MealRepository _mealRepository;
   final UserRepository _userRepository;
@@ -15,18 +15,30 @@ class HomeViewModel extends BaseViewModel {
   Map<String, double> _todaysNutrition = {};
   DateTime _selectedDate = DateTime.now();
   
+  /// The current user.
   UserModel? get user => _user;
+  /// The list of meals for the selected date.
   List<MealModel> get todaysMeals => _todaysMeals;
+  /// The nutrition summary for the selected date.
   Map<String, double> get todaysNutrition => _todaysNutrition;
+  /// The currently selected date.
   DateTime get selectedDate => _selectedDate;
   
+  /// The total calories for the selected date.
   int get totalCalories => _todaysNutrition['calories']?.round() ?? 0;
+  /// The total protein for the selected date.
   double get proteinGrams => _todaysNutrition['protein'] ?? 0;
+  /// The total carbs for the selected date.
   double get carbsGrams => _todaysNutrition['carbs'] ?? 0;
+  /// The total fat for the selected date.
   double get fatGrams => _todaysNutrition['fat'] ?? 0;
 
+  /// Creates a new instance of the [HomeViewModel] class.
   HomeViewModel(this._mealRepository, this._userRepository);
 
+  /// Loads the initial data for the home screen.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> loadInitialData(String userId) async {
     setState(ViewState.busy);
     await Future.wait([
@@ -36,6 +48,9 @@ class HomeViewModel extends BaseViewModel {
     setState(ViewState.idle);
   }
 
+  /// Loads the user data.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> loadUserData(String userId) async {
     try {
       _user = await _userRepository.getUserData(userId);
@@ -45,6 +60,9 @@ class HomeViewModel extends BaseViewModel {
     }
   }
 
+  /// Loads the meals for the selected date.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> loadTodaysMeals([String? userId]) async {
     if (userId == null) {
       print('HomeViewModel: No userId provided, clearing meals');
@@ -78,7 +96,9 @@ class HomeViewModel extends BaseViewModel {
     }
   }
 
-  // Add this method to refresh meals without showing loading state
+  /// Refreshes the meals for the selected date.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> refreshTodaysMeals(String userId) async {
     try {
       print('HomeViewModel: Refreshing meals for userId: $userId');
@@ -97,6 +117,9 @@ class HomeViewModel extends BaseViewModel {
     }
   }
 
+  /// Calculates the nutrition summary for the selected date.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> _calculateNutritionSummary(String userId) async {
     try {
       final startOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
@@ -122,6 +145,10 @@ class HomeViewModel extends BaseViewModel {
     }
   }
 
+  /// Deletes a meal.
+  ///
+  /// The [mealId] is the unique identifier of the meal to delete.
+  /// The [userId] is the unique identifier of the user.
   Future<void> deleteMeal(String mealId, String userId) async {
     setState(ViewState.busy);
     
@@ -133,18 +160,28 @@ class HomeViewModel extends BaseViewModel {
     }
   }
 
+  /// Selects a date.
+  ///
+  /// The [date] is the date to select.
+  /// The [userId] is the unique identifier of the user.
   Future<void> selectDate(DateTime date, String userId) async {
     _selectedDate = date;
     notifyListeners();
     await loadTodaysMeals(userId);
   }
 
+  /// Gets the calorie progress.
+  ///
+  /// Returns the calorie progress as a value between 0.0 and 1.0.
   double getCalorieProgress() {
     final goal = _user?.calorieGoal ?? AppConstants.dailyCalorieGoal;
     if (goal == 0) return 0.0;
     return (totalCalories / goal).clamp(0.0, 1.0);
   }
 
+  /// Gets the days of the week.
+  ///
+  /// Returns a list of maps, where each map represents a day of the week.
   List<Map<String, dynamic>> getWeekDays() {
     final now = DateTime.now();
     return List.generate(7, (index) {
@@ -157,12 +194,17 @@ class HomeViewModel extends BaseViewModel {
     });
   }
 
+  /// Gets the name of the day of the week.
+  ///
+  /// The [weekday] is the day of the week, where 1 is Monday and 7 is Sunday.
+  ///
+  /// Returns the name of the day of the week.
   String _getDayName(int weekday) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return days[weekday - 1];
   }
 
-  // New method to clear meals, useful on logout
+  /// Clears the meals.
   void clearMeals() {
     _todaysMeals = [];
     _todaysNutrition = {

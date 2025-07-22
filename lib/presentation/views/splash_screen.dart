@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
+/// This class is the splash screen of the application.
+/// It is shown when the application is first launched.
 class SplashScreen extends StatefulWidget {
+  /// Creates a new instance of the [SplashScreen] class.
   const SplashScreen({super.key});
 
   @override

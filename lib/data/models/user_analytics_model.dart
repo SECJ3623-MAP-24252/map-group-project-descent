@@ -1,14 +1,23 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Represents the user's analytics data.
 class UserAnalyticsModel {
+  /// The unique identifier of the user.
   final String userId;
+  /// The total number of calories consumed by the user.
   final double totalCalories;
+  /// The total amount of protein consumed by the user.
   final double totalProtein;
+  /// The total amount of carbohydrates consumed by the user.
   final double totalCarbs;
+  /// The total amount of fat consumed by the user.
   final double totalFat;
+  /// The total number of meals consumed by the user.
   final int totalMeals;
+  /// The date and time the analytics data was last updated.
   final DateTime lastUpdated;
 
+  /// Creates a new instance of the [UserAnalyticsModel] class.
   UserAnalyticsModel({
     required this.userId,
     this.totalCalories = 0.0,
@@ -19,6 +28,7 @@ class UserAnalyticsModel {
     required this.lastUpdated,
   });
 
+  /// Creates a new instance of the [UserAnalyticsModel] class from a Firestore document.
   factory UserAnalyticsModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return UserAnalyticsModel(
@@ -32,6 +42,7 @@ class UserAnalyticsModel {
     );
   }
 
+  /// Converts this [UserAnalyticsModel] to a [Map] for Firestore.
   Map<String, dynamic> toMap() {
     return {
       'totalCalories': totalCalories,
@@ -43,6 +54,7 @@ class UserAnalyticsModel {
     };
   }
 
+  /// Creates a copy of this [UserAnalyticsModel] with the given fields updated.
   UserAnalyticsModel copyWith({
     double? totalCalories,
     double? totalProtein,

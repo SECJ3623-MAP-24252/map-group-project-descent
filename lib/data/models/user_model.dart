@@ -1,16 +1,27 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Represents a user of the application.
 class UserModel {
+  /// The unique identifier of the user.
   final String uid;
+  /// The email address of the user.
   final String email;
+  /// The display name of the user.
   final String? displayName;
+  /// The URL of the user's profile photo.
   final String? photoURL;
+  /// The date and time the user was created.
   final DateTime createdAt;
+  /// The date and time the user last logged in.
   final DateTime lastLoginAt;
+  /// A map of the user's preferences.
   final Map<String, dynamic>? preferences;
+  /// The FCM token of the user's device.
   final String? fcmToken; // Added for FCM
+  /// The user's daily calorie goal.
   final int? calorieGoal;
 
+  /// Creates a new instance of the [UserModel] class.
   UserModel({
     required this.uid,
     required this.email,
@@ -23,7 +34,7 @@ class UserModel {
     this.calorieGoal,
   });
 
-  // Convert UserModel to Map for Firestore
+  /// Converts this [UserModel] to a [Map] for Firestore.
   Map<String, dynamic> toMap() {
     return {
       'uid': uid,
@@ -38,7 +49,7 @@ class UserModel {
     };
   }
 
-  // Create UserModel from Firestore document
+  /// Creates a new instance of the [UserModel] class from a Firestore document.
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return UserModel(
@@ -54,7 +65,7 @@ class UserModel {
     );
   }
 
-  // Create a copy of UserModel with updated fields
+  /// Creates a copy of this [UserModel] with the given fields updated.
   UserModel copyWith({
     String? uid,
     String? email,

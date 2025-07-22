@@ -1,3 +1,4 @@
+/// This class is used to configure the API keys for the various services used in the application.
 class APIConfig {
   // In production, these should come from environment variables or Firebase Remote Config
   static const Map<String, String> _apiKeys = {
@@ -8,6 +9,11 @@ class APIConfig {
     'calorieninjas': 'nP9c+cyCj0xibU1VbFktEA==uE2FWPbXEArOYZG1',
   };
 
+  /// Gets the API key for the specified service.
+  ///
+  /// The [service] is the name of the service for which to get the API key.
+  ///
+  /// Returns the API key for the specified service, or null if the service is not found.
   static String? getApiKey(String service) {
     try {
       return _apiKeys[service];
@@ -17,6 +23,11 @@ class APIConfig {
     }
   }
 
+  /// Checks if an API key is available for the specified service.
+  ///
+  /// The [service] is the name of the service for which to check for an API key.
+  ///
+  /// Returns true if an API key is available for the specified service, otherwise returns false.
   static bool hasApiKey(String service) {
     try {
       final key = _apiKeys[service];
@@ -31,6 +42,8 @@ class APIConfig {
   }
 
   /// Check which AI services are available
+  ///
+  /// Returns a list of the available AI services.
   static List<String> getAvailableServices() {
     final available = <String>[];
 

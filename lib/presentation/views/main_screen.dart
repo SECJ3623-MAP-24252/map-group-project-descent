@@ -7,7 +7,10 @@ import './analytics/analytics_page.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
+/// This class is the main screen of the application.
+/// It contains the bottom navigation bar and the floating action button.
 class MainScreen extends StatefulWidget {
+  /// Creates a new instance of the [MainScreen] class.
   const MainScreen({super.key});
 
   @override

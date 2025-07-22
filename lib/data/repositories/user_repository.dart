@@ -4,13 +4,21 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 
+/// This class is a repository for the user feature.
 class UserRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Creates a new instance of the [UserRepository] class.
   UserRepository();
 
   // Authentication methods
+  /// Signs in a user with the given email and password.
+  ///
+  /// The [email] is the user's email address.
+  /// The [password] is the user's password.
+  ///
+  /// Returns a [UserModel] object if the sign-in is successful, otherwise returns null.
   Future<UserModel?> signInWithEmail(String email, String password) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
@@ -28,6 +36,13 @@ class UserRepository {
     }
   }
 
+  /// Registers a new user with the given email, password, and display name.
+  ///
+  /// The [email] is the user's email address.
+  /// The [password] is the user's password.
+  /// The [displayName] is the user's display name.
+  ///
+  /// Returns a [UserModel] object if the registration is successful, otherwise returns null.
   Future<UserModel?> registerWithEmail(
     String email,
     String password,
@@ -60,15 +75,24 @@ class UserRepository {
     }
   }
 
+  /// Signs out the current user.
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
+  /// Sends a password reset email to the given email address.
+  ///
+  /// The [email] is the user's email address.
   Future<void> resetPassword(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
   // User data methods
+  /// Gets the user data for the given unique identifier.
+  ///
+  /// The [uid] is the unique identifier of the user.
+  ///
+  /// Returns a [UserModel] object if the user is found, otherwise returns null.
   Future<UserModel?> getUserData(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
@@ -81,6 +105,9 @@ class UserRepository {
     }
   }
 
+  /// Creates a new user document in Firestore.
+  ///
+  /// The [user] is the user to be created.
   Future<void> createUserDocument(UserModel user) async {
     try {
       await _firestore.collection('users').doc(user.uid).set(user.toMap());
@@ -89,6 +116,13 @@ class UserRepository {
     }
   }
 
+  /// Updates the user's profile.
+  ///
+  /// The [uid] is the unique identifier of the user.
+  /// The [displayName] is the user's new display name.
+  /// The [photoURL] is the URL of the user's new profile photo.
+  /// The [imageFile] is the new profile photo.
+  /// The [calorieGoal] is the user's new daily calorie goal.
   Future<void> updateUserProfile(
     String uid, {
     String? displayName,
@@ -129,6 +163,9 @@ class UserRepository {
     }
   }
 
+  /// Updates the last login time of the user.
+  ///
+  /// The [uid] is the unique identifier of the user.
   Future<void> _updateLastLogin(String uid) async {
     try {
       await _firestore.collection('users').doc(uid).update({
@@ -139,7 +176,9 @@ class UserRepository {
     }
   }
 
+  /// Gets the current user.
   User? get currentUser => _auth.currentUser;
 
+  /// A stream of the user's authentication state.
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }

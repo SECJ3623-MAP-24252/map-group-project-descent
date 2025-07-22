@@ -13,7 +13,9 @@ import '../presentation/views/scanner/food_scan_results_page.dart';
 import '../presentation/views/analytics/analytics_page.dart';
 import '../data/models/meal_model.dart';
 
+/// This class is responsible for generating routes for the application.
 class AppRoutes {
+  /// This method generates a route based on the given [RouteSettings].
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/login':
@@ -37,6 +39,7 @@ class AppRoutes {
         if (args is MealModel) {
           return MaterialPageRoute(builder: (_) => EditFoodPage(meal: args));
         }
+        // If the arguments are not valid, return a page with an error message.
         return MaterialPageRoute(
           builder:
               (_) => Scaffold(
@@ -58,6 +61,7 @@ class AppRoutes {
                 ),
           );
         }
+        // If the arguments are not valid, return a page with an error message.
         return MaterialPageRoute(
           builder:
               (_) => Scaffold(
@@ -69,6 +73,7 @@ class AppRoutes {
       case '/analytics':
         return MaterialPageRoute(builder: (_) => const AnalyticsPage());
       default:
+        // If the route is not defined, return a page with an error message.
         return MaterialPageRoute(
           builder:
               (_) => Scaffold(

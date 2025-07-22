@@ -1,3 +1,4 @@
+/// This class is a local database of food items and their nutritional information.
 class LocalFoodDatabase {
   static const Map<String, Map<String, dynamic>> _foodDatabase = {
     'apple': {
@@ -75,6 +76,10 @@ class LocalFoodDatabase {
   };
 
   /// Search for food in local database
+  ///
+  /// The [foodName] is the name of the food to search for.
+  ///
+  /// Returns a map of the food's nutritional information, or null if the food is not found.
   static Map<String, dynamic>? searchFood(String foodName) {
     final cleanName = foodName.toLowerCase().trim();
 
@@ -94,11 +99,16 @@ class LocalFoodDatabase {
   }
 
   /// Get all available foods
+  ///
+  /// Returns a list of all the food names in the database.
   static List<String> getAllFoods() {
     return _foodDatabase.keys.toList();
   }
 
   /// Add new food to local database (for user customization)
+  ///
+  /// The [name] is the name of the food to add.
+  /// The [nutrition] is a map of the food's nutritional information.
   static void addFood(String name, Map<String, dynamic> nutrition) {
     // In a real app, you'd save this to local storage or Firebase
     print('Would save $name with nutrition: $nutrition');

@@ -1,8 +1,8 @@
-
 import '../../data/repositories/meal_repository.dart';
 import '../../data/models/meal_model.dart';
 import 'base_viewmodel.dart';
 
+/// This class is a view model for the nutrition screen.
 class NutritionViewModel extends BaseViewModel {
   final MealRepository _mealRepository;
   
@@ -11,21 +11,31 @@ class NutritionViewModel extends BaseViewModel {
   int _selectedDayIndex = 2; // Default to middle day
   List<DateTime> _weekDays = [];
   
+  /// The list of all meals.
   List<MealModel> get meals => _meals;
+  /// The list of meals for the selected day.
   List<MealModel> get dailyMeals => _dailyMeals;
+  /// The index of the selected day.
   int get selectedDayIndex => _selectedDayIndex;
+  /// The list of days in the week.
   List<DateTime> get weekDays => _weekDays;
+  /// The currently selected date.
   DateTime get selectedDate => _weekDays.isNotEmpty ? _weekDays[_selectedDayIndex] : DateTime.now();
 
+  /// Creates a new instance of the [NutritionViewModel] class.
   NutritionViewModel(this._mealRepository) {
     _initializeWeekDays();
   }
 
+  /// Initializes the week days.
   void _initializeWeekDays() {
     final now = DateTime.now();
     _weekDays = List.generate(7, (index) => now.subtract(Duration(days: 3 - index)));
   }
 
+  /// Loads the meals for the selected day.
+  ///
+  /// The [userId] is the unique identifier of the user.
   Future<void> loadMealsForSelectedDay(String userId) async {
     setState(ViewState.busy);
     
@@ -40,6 +50,9 @@ class NutritionViewModel extends BaseViewModel {
     }
   }
 
+  /// Loads the daily meals.
+  ///
+  /// The [date] is the date for which to load the meals.
   Future<void> loadDailyMeals(DateTime date) async {
     setState(ViewState.busy);
     
@@ -53,12 +66,20 @@ class NutritionViewModel extends BaseViewModel {
     }
   }
 
+  /// Selects a day.
+  ///
+  /// The [index] is the index of the day to select.
+  /// The [userId] is the unique identifier of the user.
   void selectDay(int index, String userId) {
     _selectedDayIndex = index;
     notifyListeners();
     loadMealsForSelectedDay(userId);
   }
 
+  /// Deletes a meal.
+  ///
+  /// The [mealId] is the unique identifier of the meal to delete.
+  /// The [userId] is the unique identifier of the user.
   Future<void> deleteMeal(String mealId, [String? userId]) async {
     setState(ViewState.busy);
     
@@ -87,6 +108,11 @@ class NutritionViewModel extends BaseViewModel {
     }
   }
 
+  /// Adds a meal.
+  ///
+  /// The [meal] is the meal to add.
+  ///
+  /// Returns the unique identifier of the added meal.
   Future<String> addMeal(MealModel meal) async {
     setState(ViewState.busy);
     
@@ -103,6 +129,9 @@ class NutritionViewModel extends BaseViewModel {
     }
   }
 
+  /// Updates a meal.
+  ///
+  /// The [meal] is the meal to update.
   Future<void> updateMeal(MealModel meal) async {
     setState(ViewState.busy);
     
@@ -142,13 +171,18 @@ class NutritionViewModel extends BaseViewModel {
     }
   }
 
+  /// Formats a date.
+  ///
+  /// The [date] is the date to format.
+  ///
+  /// Returns the formatted date.
   String formatDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}';
   }
 
-  // New method to clear meals, useful on logout
+  /// Clears the meals.
   void clearMeals() {
     _meals = [];
     _dailyMeals = [];

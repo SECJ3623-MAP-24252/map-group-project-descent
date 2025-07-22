@@ -7,6 +7,7 @@ import '../../data/repositories/meal_repository.dart';
 import '../../data/models/meal_model.dart';
 import 'base_viewmodel.dart';
 
+/// This class is a view model for the scanner screen.
 class ScannerViewModel extends BaseViewModel {
   final AIFoodRepository _aiFoodRepository;
   final MealRepository _mealRepository;
@@ -19,14 +20,21 @@ class ScannerViewModel extends BaseViewModel {
   Map<String, dynamic>? _scanResults;
   bool _isFlashOn = false;
 
+  /// The camera controller.
   CameraController? get cameraController => _cameraController;
+  /// Whether the camera is initialized.
   bool get isCameraInitialized => _isCameraInitialized;
+  /// The scanning status.
   String get scanningStatus => _scanningStatus;
+  /// The scan results.
   Map<String, dynamic>? get scanResults => _scanResults;
+  /// Whether the flash is on.
   bool get isFlashOn => _isFlashOn;
 
+  /// Creates a new instance of the [ScannerViewModel] class.
   ScannerViewModel(this._aiFoodRepository, this._mealRepository);
 
+  /// Initializes the camera.
   Future<void> initializeCamera() async {
     try {
       _cameras = await availableCameras();
@@ -45,6 +53,9 @@ class ScannerViewModel extends BaseViewModel {
     }
   }
 
+  /// Captures an image and analyzes it.
+  ///
+  /// Returns a map containing the image file and the nutrition data.
   Future<Map<String, dynamic>?> captureAndAnalyze() async {
     if (!_isCameraInitialized || isBusy) return null;
 
@@ -61,6 +72,9 @@ class ScannerViewModel extends BaseViewModel {
     }
   }
 
+  /// Picks an image from the gallery and analyzes it.
+  ///
+  /// Returns a map containing the image file and the nutrition data.
   Future<Map<String, dynamic>?> pickFromGallery() async {
     if (isBusy) return null;
 
@@ -89,6 +103,11 @@ class ScannerViewModel extends BaseViewModel {
     }
   }
 
+  /// Analyzes a food image.
+  ///
+  /// The [imageFile] is the image file to analyze.
+  ///
+  /// Returns a map containing the nutrition data.
   Future<Map<String, dynamic>> _analyzeFood(File imageFile) async {
     try {
       _updateScanningStatus('Analyzing with AI...');
@@ -105,6 +124,12 @@ class ScannerViewModel extends BaseViewModel {
     }
   }
 
+  /// Saves a meal from a scan.
+  ///
+  /// The [userId] is the unique identifier of the user.
+  /// The [nutritionData] is the nutrition data of the meal.
+  /// The [mealType] is the type of the meal.
+  /// The [imageFile] is the image file of the meal.
   Future<void> saveMealFromScan({
     required String userId,
     required Map<String, dynamic> nutritionData,
@@ -168,6 +193,7 @@ class ScannerViewModel extends BaseViewModel {
     }
   }
 
+  /// Toggles the flash.
   Future<void> toggleFlash() async {
     if (_cameraController != null && _isCameraInitialized) {
       try {
@@ -182,6 +208,9 @@ class ScannerViewModel extends BaseViewModel {
     }
   }
 
+  /// Updates the scanning status.
+  ///
+  /// The [status] is the new scanning status.
   void _updateScanningStatus(String status) {
     _scanningStatus = status;
     notifyListeners();

@@ -5,6 +5,10 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+/**
+ * This function is triggered when a new meal is created.
+ * It updates the user's analytics.
+ */
 exports.onMealCreate = functions.firestore
     .document("meals/{mealId}")
     .onCreate(async (snap, context) => {
@@ -45,6 +49,10 @@ exports.onMealCreate = functions.firestore
       });
     });
 
+/**
+ * This function is triggered when a meal is updated.
+ * It updates the user's analytics.
+ */
 exports.onMealUpdate = functions.firestore
     .document("meals/{mealId}")
     .onUpdate(async (change, context) => {
@@ -78,6 +86,10 @@ exports.onMealUpdate = functions.firestore
         });
     });
 
+/**
+ * This function is triggered when a meal is deleted.
+ * It updates the user's analytics.
+ */
 exports.onMealDelete = functions.firestore
     .document("meals/{mealId}")
     .onDelete(async (snap, context) => {

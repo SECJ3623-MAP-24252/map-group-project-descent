@@ -12,6 +12,7 @@ import 'presentation/viewmodels/nutrition_viewmodel.dart';
 import 'presentation/viewmodels/profile_viewmodel.dart';
 import 'app/routes.dart';
 import 'presentation/views/splash_screen.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 /// This function handles background messages from Firebase Cloud Messaging.
 /// It is a top-level function to ensure it can be accessed by the Firebase plugin.
@@ -28,6 +29,7 @@ void main() async {
   // Ensure that the Flutter binding is initialized before running the app.
   WidgetsFlutterBinding.ensureInitialized();
   // Initialize Firebase.
+  tz.initializeTimeZones();
   await Firebase.initializeApp();
 
   // Set up the background message handler for Firebase Messaging.
